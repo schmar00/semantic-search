@@ -2,6 +2,9 @@
 Searching a CSW (Geodata catalogue) by external keyword thesaurus (SKOS/RDF). A contribution to the project GeoERA (http://geoera.eu/).
 This website provides a semantic layer to search a Catalogue Webservice by keywords. This example is built to search the geocat.ch (https://www.geocat.ch/geonetwork/srv/eng/csw) CSW catalogue web service. For the search logic is used the GEMET thesaurus (https://www.eionet.europa.eu/gemet/en/exports/rdf/latest) hosted at the Geological Survey of Austria (Sparql endpoint http://resource.geolba.ac.at/PoolParty/sparql/keywords).
 
+## Test link
+http://www.geolba.net/semantic-search/
+
 ## Deployment
 * This project is not ready to deploy by installation packages!
 * hardcoded urls for testing
