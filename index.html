@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>keyword search</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/3.3.0/fuse.min.js" charset="utf-8"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.bundle.min.js"></script>
+    <script src="js/pv.js"></script>
+
+    <style>
+        .dropdown-item:hover {
+            background-color: #ecf0f1 !important;
+        }
+        @media screen and (min-width: 1000px) {
+            #title {
+                font-size: 3vw;
+            }
+        }
+        #dropdown {
+            background-color: white;
+            min-width: 200px;
+            position: relative;
+            z-index: 999;
+        }
+        #dropdown a {
+            color: black;
+        }
+        #dropdown td {
+            padding: .1rem;
+            padding-left: .75rem;
+        }
+        .searchLink {
+            color: black;
+            cursor: pointer;
+        }
+        .searchPropTyp {
+            color: #777;
+            font-size: small;
+            font-weight: 700;
+        }
+        .searchResultText {
+            font-size: small;
+        }
+        .keywords1 {
+            display: inline-block;
+            padding: 0px 2px;
+            font-size: 60%;
+            font-weight: 600;
+            border-radius: 2px;
+            color: white;
+            background: #009900;
+        } 
+        .keywords2 {
+            display: inline-block;
+            padding: 0px 2px;
+            font-size: 60%;
+            font-weight: 600;
+            border-radius: 2px;
+            color: white;
+            background: #bfbfbf;
+        }         
+
+    </style>
+
+</head>
+
+<body>
+    <!-- Page Content -->
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Search Widget -->
+                <div id="search_widget" class="card my-4 text-white bg-success mb-3">
+                    <h5 class="card-header">EXAMPLE: metadata catalogue search <span id="lang"></span></h5>
+                    <div id="searchCard" class="card-body">
+                        <div id="searchGroup" class="input-group">
+                            <input id="searchInput" type="text" class="form-control" placeholder="Search for...  (e.g. extraction)" disabled="">
+                            <div style="position: absolute; top: 39px;">
+                                <table id="dropdown" class="table table-hover"></table>
+                            </div>
+                            <span class="input-group-btn"><button id="searchBtn" class="btn btn-secondary" type="button">Go!</button></span>
+                        </div>
+                    </div>
+                </div>
+                <div id="pageContent" class="col-lg-12">
+                    <div id="1"></div>
+                    <div id="2"></div>
+                    <div id="3"></div>
+                    <div id="4"></div>
+                    <div id="5"></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card my-4 border-success mb-3" style="max-width: 20rem; line-height: 100%;">
+                    <div class="card-header">instruction</div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            <small>This example is built to search the <a href="https://www.geocat.ch/geonetwork/srv/eng/csw">geocat.ch CSW catalogue web service</a>. For the search logic is used the <a href="https://www.eionet.europa.eu/gemet/en/exports/rdf/latest">GEMET thesaurus</a> hosted at the Geological Survey of Austria (<a href="http://resource.geolba.ac.at/PoolParty/sparql/keywords">Sparql endpoint</a>).
+                                <hr>
+                                To perform a semantic search via keywords - select a keyword promoted in the dropdown list.<br>
+                                The search passes through following steps (relevance criteria):
+                                <ol style="padding-left: 1rem;">
+                                    <li>exact matches in keywords</li>
+                                    <li>full text matches in abstracts texts</li>
+                                    <li>matches of keywords within a semantic distance of 1 (broader, narrower and related)</li>
+                                    <li>matches of all narrower keywords</li>
+                                    <li>full text matches of all narrower keywords in abstracts texts</li>
+                                </ol>
+                                If a term typed in and checked with Enter or Go! button - a full text search (language dependent!) is carried out.
+                                <hr>
+                                For test purposes the number of results is cropped to a maximum of 3 each. In practice a search would stop if a total number of about 20 results is managed
+                                <hr>The language of the keywords offered to search is choosen by the browser language.</small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- /.row -->
+    </div>
+</body>
+
+</html>
