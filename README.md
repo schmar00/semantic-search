@@ -5,7 +5,7 @@ This website provides a semantic layer to search a Catalogue Webservice by keywo
 ## GeoERA/EGDI test link
 preview http://www.geolba.net/semantic-search/ prepared for following browser languages: English, German, Spanish, Slovenian, Czech and Danish. This test page doesnot work on MS browsers yet. In general all modern browsers like Firefox, Chrome, Safari (and Edge?) are supported.
 
-# Test link for geocat.ch
+### Test link for geocat.ch
 for searching the geocat.ch (https://www.geocat.ch/geonetwork/srv/eng/csw) CSW catalogue web service is available under http://www.geolba.net/semantic-search/geocat
 
 ## Deployment
