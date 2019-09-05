@@ -134,7 +134,7 @@
                     <div class="card-header">instruction</div>
                     <div class="card-body">
                         <p class="card-text">
-                            <small>This example is built to search the <a href="https://egdi.geology.cz/?ak=search">EGDI (Micka) CSW catalogue web service</a>. For the search logic is used the <a href="https://www.eionet.europa.eu/gemet/en/exports/rdf/latest">GEMET thesaurus</a> hosted at the Geological Survey of Austria (<a href="http://resource.geolba.ac.at/PoolParty/sparql/keywords">Sparql endpoint</a>).
+                            <small>This example is built to search the <a href="https://egdi.geology.cz/?ak=search">EGDI (Micka) CSW catalogue web service</a>. For the search logic is used the <strong>new GeoERA Keyword Thesaurus</strong> hosted at the Geological Survey of Austria (<a href="http://resource.geolba.ac.at/PoolParty/sparql/geoera_keyword">Sparql endpoint</a>).
                                 <hr>
                                 To perform a <strong>semantic search</strong> via keywords <br>- <strong>select a keyword</strong> promoted in the dropdown list <strong>or press Enter</strong> to select the upper most. The search passes through following steps trying to find a maximum of <strong>20</strong> results:<br><br>
                                 <ol style="padding-left: 1rem;">
@@ -150,7 +150,9 @@
                                 <strong>Relevance criteria</strong> for sorting the results list are calculated as follows:<br><br>
                                 10 pts for the search term as keyword / 3 pts each for narrower or related keyword matches / 1 pt for each broader match / 3 pts for the search term in title / 2 pts for each occurence of the search term in abstract / and finally 1 pt for partly text matches in keywords. The total sum of points is cut by 12 pts and converted to percents.
                                 <hr>
-                                Note:<br>Keywords are searched against catalogue texts in English language. But the language of the keywords offered to search is choosen by the browser language. If a term typed in and searched by <strong>Go! button - a full text search</strong> (language dependent!) is carried out.
+                                Note:<br>Keywords are searched against catalogue texts in English language. But the language of the keywords offered to search is <strong>choosen by the browser language</strong>. About 30% terms are available in 23 non-english languages.
+                                <hr>
+                                If a term typed in and searched by <strong>Go! button - a full text search</strong> (language dependent!) is carried out.
                             </small>
                         </p>
                     </div>

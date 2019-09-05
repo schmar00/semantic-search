@@ -1,5 +1,5 @@
 let USER_LANG = (navigator.language || navigator.language).substring(0, 2);
-let suppLang = ['de', 'es', 'cs', 'sl', 'da'];
+let suppLang = ['en', 'cs', 'da', 'el', 'de', 'es', 'et', 'fi', 'fr', 'hr', 'hu', 'is', 'it', 'lt', 'nl', 'no', 'pl', 'pt', 'ro', 'sk', 'sl', 'sv', 'uk'];
 if (!suppLang.includes(USER_LANG)) {
     USER_LANG = 'en';
 }
