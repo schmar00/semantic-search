@@ -3,10 +3,7 @@ Searching a CSW (Geodata catalogue) by external keyword thesaurus (SKOS/RDF). A 
 This website provides a semantic layer to search a Catalogue Webservice by keywords. This example is built to search the EGDI (Micka) (https://egdi.geology.cz/?ak=search) CSW catalogue web service. For the search logic is used the GEMET thesaurus (https://www.eionet.europa.eu/gemet/en/exports/rdf/latest) hosted at the Geological Survey of Austria (Sparql endpoint http://resource.geolba.ac.at/PoolParty/sparql/keywords).
 
 ## GeoERA/EGDI test link
-preview http://www.geolba.net/semantic-search/ prepared for following browser languages: English, German, Spanish, Slovenian, Czech and Danish. This test page doesnot work on MS browsers yet. In general all modern browsers like Firefox, Chrome, Safari (and Edge?) are supported.
-
-### Test link for geocat.ch
-for searching the geocat.ch (https://www.geocat.ch/geonetwork/srv/eng/csw) CSW catalogue web service is available under http://www.geolba.net/semantic-search/geocat.html
+preview https://schmar00.github.io/semantic-search/ to search in 23 browser languages (en, cs, da, el, de, es, et, fi, fr, hr, hu, is, it, lt, nl, no, pl, pt, ro, sk, sl, sv, uk). This test page doesnot work on old IE browsers. In general all modern browsers like Firefox, Chrome, Safari and Edge are supported.
 
 ## Deployment
 * This project is not ready to deploy by installation packages!
