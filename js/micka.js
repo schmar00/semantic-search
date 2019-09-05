@@ -4,7 +4,7 @@ if (!suppLang.includes(USER_LANG)) {
     USER_LANG = 'en';
 }
 
-let ENDPOINT = 'http://resource.geolba.ac.at/PoolParty/sparql/keywords';
+let ENDPOINT = 'https://resource.geolba.ac.at/PoolParty/sparql/geoera_keyword';
 
 $(document).ready(function () {
 
