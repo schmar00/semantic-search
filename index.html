@@ -8,101 +8,35 @@
     <meta name="author" content="">
     <title>keyword search</title>
 
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+    <link rel="shortcut icon" href="">
+    <link rel="stylesheet" href="https://bootswatch.com/4/simplex/bootstrap.min.css">
+    <link rel="stylesheet" href="css/site.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/3.3.0/fuse.min.js" charset="utf-8"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.bundle.min.js"></script>
 
-    <!--    <link rel="stylesheet" href="css/bootstrap.min.css">
-
-    <script src="js/fuse.min.js" charset="utf-8"></script>
-    <script src="js/jquery.min.js"></script>
-    <script src="js/bootstrap.bundle.min.js"></script>-->
+    <script src="js/ws.js"></script>
     <script src="js/micka.js"></script>
-
-    <style>
-        .dropdown-item:hover {
-            background-color: #ecf0f1 !important;
-        }
-
-        @media screen and (min-width: 1000px) {
-            #title {
-                font-size: 3vw;
-            }
-        }
-
-        #dropdown {
-            background-color: white;
-            min-width: 200px;
-            position: relative;
-            z-index: 999;
-        }
-
-        #dropdown a {
-            color: black;
-        }
-
-        #dropdown td {
-            padding: .1rem;
-            padding-left: .75rem;
-        }
-
-        .searchLink {
-            color: black;
-            cursor: pointer;
-        }
-
-        .searchPropTyp {
-            color: #777;
-            font-size: small;
-            font-weight: 700;
-        }
-
-        .searchResultText {
-            font-size: small;
-        }
-
-        .keywords,
-        .keywords1,
-        .keywords2,
-        .keywords3,
-        .keywords4 {
-            display: inline-block;
-            padding: 0px 2px;
-            font-size: 60%;
-            font-weight: 600;
-            border-radius: 2px;
-            color: white;
-            background: #bfbfbf;
-        }
-
-        .keywords1 {
-            background: #145671;
-        }
-
-        .keywords2 {
-            background: #347B98;
-        }
-
-        .keywords3 {
-            background: #66B032;
-        }
-
-        .keywords4 {
-            background: #B2D732;
-        }
-
-    </style>
-
 </head>
 
 <body>
     <script>
-        let ua = window.navigator.userAgent;
-        if (ua.indexOf('MSIE') + ua.indexOf('Trident') + ua.indexOf('Edge') > -2) {
-            alert('this test page is optimized for modern Firefox, Chrome or Safari browsers');
+        if (typeof micka == 'undefined' || window.navigator.userAgent.indexOf('MSIE ') > 0 || window.navigator.userAgent.indexOf('Trident/') > 0) {
+            document.execCommand('Stop');
+            document.body = document.createElement("body");
+            document.body.innerHTML = '<div class="alert alert-dismissible alert-warning">' +
+                '<button type="button" class="close" data-dismiss="alert">&times;</button>' +
+                '<h4 class="alert-heading">GeoERA Semantic Search</h4>' +
+                '<p class="mb-0">[Deutsch]<br>' +
+                'Die Website wurde f&uuml;r die Browser Firefox, Chrome, Safari oder MS Edge optimiert bzw. modernisiert und unterst&uuml;tzt nicht mehr die Darstellung im MS Internet Explorer 11 oder &auml;lter.' +
+                '<br><br>' +
+                '[English]<br>This website is optimized for browsers Firefox, Chrome, Safari or MS Edge. - MS Internet Explorer 11 or older is not supported any more.' +
+                '</p></div>';
+        } else {
+            $(document).ready(function () {
+                micka.init();
+            });
         }
-
     </script>
     <!-- Page Content -->
     <div class="container">
@@ -134,8 +68,9 @@
                     <div class="card-header">instruction</div>
                     <div class="card-body">
                         <p class="card-text">
-                            <small>This example is built to search the <a href="https://egdi.geology.cz/?ak=search">EGDI (Micka) CSW catalogue web service</a>. For the search logic is used the <strong>new GeoERA Keyword Thesaurus</strong> hosted at the Geological Survey of Austria (<a href="http://resource.geolba.ac.at/PoolParty/sparql/geoera_keyword">Sparql endpoint</a>).
-                                <hr>
+                            <small>
+                                This example is built to search the <a href="https://egdi.geology.cz/?ak=search">EGDI (Micka) CSW catalogue web service</a>. For the search logic is used the <strong>new GeoERA Keyword Thesaurus</strong> hosted at the Geological Survey of Austria (<a href="http://resource.geolba.ac.at/PoolParty/sparql/geoera_keyword">Sparql endpoint</a>).
+                                <hr/>
                                 To perform a <strong>semantic search</strong> via keywords <br>- <strong>select a keyword</strong> promoted in the dropdown list <strong>or press Enter</strong> to select the upper most. The search passes through following steps trying to find a maximum of <strong>20</strong> results:<br><br>
                                 <ol style="padding-left: 1rem;">
                                     <li>search term in English in keywords</li>
@@ -149,9 +84,9 @@
 
                                 <strong>Relevance criteria</strong> for sorting the results list are calculated as follows:<br><br>
                                 10 pts for the search term as keyword / 3 pts each for narrower or related keyword matches / 1 pt for each broader match / 3 pts for the search term in title / 2 pts for each occurence of the search term in abstract / and finally 1 pt for partly text matches in keywords. The total sum of points is cut by 12 pts and converted to percents.
-                                <hr>
+                                <hr/>
                                 Note:<br>Keywords are searched against catalogue texts in English language. But the language of the keywords offered to search is <strong>choosen by the browser language</strong>. About 30% terms are available in 23 non-english languages.
-                                <hr>
+                                <hr/>
                                 If a term typed in and searched by <strong>Go! button - a full text search</strong> (language dependent!) is carried out.
                             </small>
                         </p>
