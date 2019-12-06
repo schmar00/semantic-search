@@ -105,29 +105,35 @@ var micka = {
     //************************perform the search for a selected term ************************************         
     semanticSearch: function (URIs, origLabel) {
         $('#searchInput').val(origLabel);
+        // ohne select (group_concat(distinct ?c; separator = '|') as ?category)
         ws_micka.json(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
-                                    SELECT DISTINCT (MIN(?sort) AS ?rank) ?L
-                                    WHERE {
-                                    VALUES ?s {<${URIs.replace(/;/g, "> <")}>}
-                                    VALUES ?l {skos:prefLabel skos:altLabel}
-                                    {BIND(?s AS ?o) ?o ?l ?L . FILTER(lang(?L)='en') BIND(1 AS ?sort)}
-                                    UNION
-                                    {?s skos:narrower* ?o . ?o ?l ?L . FILTER(lang(?L)='en') BIND(2 AS ?sort)}
-                                    UNION
-                                    {?s skos:related ?o . ?o ?l ?L . FILTER(lang(?L)='en') BIND(3 AS ?sort)}
-                                    UNION
-                                    {?s skos:broader ?o . ?o ?l ?L . FILTER(lang(?L)='en') BIND(4 AS ?sort)}
-                                    }
-                                    GROUP BY ?L
-                                    ORDER BY ?rank
-                                    LIMIT 20`, data => {
-            let allTerms = data.results.bindings.map(a => a.L.value);
+                        PREFIX dbp:<http://dbpedia.org/ontology/>
+                        select distinct (min(?r) as ?rank) ?L
+                        where {
+                        values ?s {<${URIs.replace(/;/g, "> <")}>}
+                        values ?l {skos:altLabel skos:prefLabel skos:hiddenLabel}
+                        {?s ?l ?L filter(lang(?L)='en') bind(0 as ?r)}
+                        union
+                        {?s skos:related ?o . ?o ?l ?L filter(lang(?L)='en') bind(1 as ?r)}
+                        union
+                        {?s skos:narrower ?o . ?o ?l ?L filter(lang(?L)='en') bind(2 as ?r)}
+                        union
+                        {?s skos:narrower+ ?o . ?o ?l ?L filter(lang(?L)='en') bind(3 as ?r)}
+                        union
+                        {?s skos:broader ?o . ?o ?l ?L filter(lang(?L)='en') bind(4 as ?r)}
+                        }
+                        group by ?L
+                        order by ?rank
+                        LIMIT 40`, data => {
+            //let allTerms = data.results.bindings.map(a => a.L.value.toLowerCase());
             let rankedTerms = [];
-            for (let i = 1; i <= 4; i++) {
-                rankedTerms.push($.map(data.results.bindings.filter(item => item.rank.value == i), (a => (a.L.value.replace(' (theme)', '')))));
+            console.log(data.results.bindings);
+            for (let i = 0; i <= 5; i++) {
+                rankedTerms.push($.map(data.results.bindings.filter(item => item.rank.value == i), (a => (a.L.value.replace(' (theme)', '').toLowerCase()))));
             }
+            console.log(rankedTerms);
             micka.clearPage();
-            micka.queryCSW(allTerms, rankedTerms);
+            micka.queryCSW(rankedTerms); //alle Begriffe und in 5 arrays zerteilt
         });
     },
 
@@ -143,9 +149,9 @@ var micka = {
     fullTextSearch: function (searchTerm) {
 
         let prefix = 'https://egdi.geology.cz/csw/?request=GetRecords&query=(';
-        let suffix = ')&format=application/json&language=eng&MaxRecords=19&ElementSetName=full';
+        let suffix = ')&format=application/json&language=eng&MaxRecords=100&ElementSetName=full';
         let results = [];
-        let rankedTerms = [[], [], [], []];
+        let rankedTerms = [[], [], [], [], []];
         rankedTerms[0].push(searchTerm.toLowerCase());
         micka.clearPage();
 
@@ -158,111 +164,133 @@ var micka = {
     },
 
     //******************************************************************************************************
-    /*
-    
-        case insensitive	#################################################### todo
-        	
-    1	Suchbegriff	subject
-    2	Suchbegriff	*Title*
-    3	narrower/related	subject
-    4	narrower/related	*Title*
-    5	Suchbegriff	*Anytext*
-    6	broader	subject
-    7	broader	*Title*
-    */
-    createQuery1: function (terms, queryType) { //micka query doesn`t accept brackets? -> replace
+
+    createQ1: function (terms, queryType) { //micka query doesn`t accept brackets? -> replace
         return terms.map(a => encodeURIComponent(queryType + '\'' + a + '\'').replace('\(', '').replace('\)', '')).join('+OR+');
     },
 
-    createQuery2: function (terms, queryType) { //micka query doesn`t accept brackets? -> replace
+    createQ2: function (terms, queryType) { //micka query doesn`t accept brackets? -> replace
         return terms.map(a => encodeURIComponent(queryType + '\'*' + a + '*\'').replace('\(', '').replace('\)', '')).join('+OR+');
     },
 
-    //******************************************************************************************************
-    queryCSW: function (allTerms, rankedTerms) {
-        let fetchQueries = [];
-        fetchQueries.push(micka.createQuery1(rankedTerms[0], 'subject='));
-        fetchQueries.push(micka.createQuery1(rankedTerms[0], 'title like '));
-        if (rankedTerms[1].concat(rankedTerms[2]).length > 0) {
-            fetchQueries.push(micka.createQuery1(rankedTerms[1].concat(rankedTerms[2]), 'subject='));
-            fetchQueries.push(micka.createQuery1(rankedTerms[1].concat(rankedTerms[2]), 'title like '));
+    queryCSW: function (rankedTerms) {
+        let fetchQ = []; //Array (der inneren Teile) der CSW Abfragen
+        let aQ = rankedTerms[0];
+        let bQ = rankedTerms[1].concat(rankedTerms[2]);
+        let cQ = rankedTerms[3].concat(rankedTerms[4]);
+
+        fetchQ.push(micka.createQ2(aQ, 'subject like ') + '+OR+' + micka.createQ2(aQ, 'title like '));
+
+        if (bQ.length > 0) {
+            fetchQ.push(micka.createQ2(bQ, 'subject like ') + '+OR+' + micka.createQ2(bQ, 'title like '));
         }
-        fetchQueries.push(micka.createQuery2(rankedTerms[0], 'Anytext like '));
-        if (rankedTerms[3].length > 0) {
-            fetchQueries.push(micka.createQuery1(rankedTerms[3], 'subject='));
-            fetchQueries.push(micka.createQuery1(rankedTerms[3], 'title like '));
+
+        fetchQ.push(micka.createQ2(aQ, 'abstract like '));
+
+        if (bQ.length > 0) {
+            fetchQ.push(micka.createQ2(bQ, 'abstract like '));
         }
+
+        if (cQ.length > 0) {
+            fetchQ.push(micka.createQ2(cQ, 'subject like ') + '+OR+' + micka.createQ2(cQ, 'title like ') + '+OR+' + micka.createQ2(cQ, 'abstract like '));
+        }
+
+        /*
+        1) *keyword* => subject, title
+        2) *narrower*, *related* => subject, title
+        3) *keyword* => abstract
+        4) *narrower*, *related* => abstract
+        5) *broader*, *narrower+* => subject, title
+        6) *broader*, *narrower+* => abstract
+        */
 
         let prefix = 'https://egdi.geology.cz/csw/?request=GetRecords&query=(';
         let suffix = ')&format=application/json&language=eng&ElementSetName=full';
-        let results = [];
+        let results = []; //alle Ergebnisse (doppelte Einträge) mit id, title, abstract, keywords, rank, relevance,
 
         (async function loop() {
-            for (let i = 0; i < fetchQueries.length; i++) { //to run all 5 queries
-                if (results.length > 19) { //to get a minimum of 20 results
+            for (let i = 0; i < fetchQ.length; i++) { //to run all 5 queries
+                if (results.length > 100) { //to get a maximum of x results
                     break;
                 }
-                await fetch(prefix + fetchQueries[i] + suffix)
+                await fetch(prefix + fetchQ[i] + suffix)
                     .then(res => res.json())
                     .then(data => {
                         results = micka.addResults(results, data, rankedTerms);
                     });
-                //console.log(i, results);
+                console.log(i, results);
             }
-            micka.printResults(results.sort((a, b) => b.rank - a.rank), rankedTerms);
+            micka.printResults(results.sort((a, b) => b.rank - a.rank), rankedTerms); //doppelte Einträge entfernen => funktioniert nicht!!
         })();
     },
 
     //******************************************************************************************************
-    addResults: function (results, jsonData, rankedTerms) {
-
+    addResults: function (results, jsonData, rankedTerms) { //rank, relevance ausrechnen
+        //console.log(jsonData.records);
+        let resIDs = results.map(a => a.id);
         for (let a of jsonData.records) {
-            let k = [];
-            if (a.keywords !== undefined) {
-                a.keywords.forEach(x => {
-                    if (x.keywords !== undefined) {
-                        k = k.concat(x.keywords.filter(Boolean))
+            if (!resIDs.includes(a.id)) {
+                let k = [];
+                if (a.keywords !== undefined) {
+                    a.keywords.forEach(x => {
+                        if (x.keywords !== undefined) {
+                            k = k.concat(x.keywords.filter(Boolean))
+                        }
+                    });
+                    k = k.map(a => a.replace(/[(),\/>]/g, '$').split('$')).flat().map(b => b.trim().toLowerCase());
+                }
+
+                let rank = 1;
+                let keywords = [];
+                for (let b of k) {
+                    if (rankedTerms[0].includes(b.toLowerCase())) {
+                        keywords.push('<span class="keywords1">' + b + '</span>');
+                        rank += 10;
+                    } else if (rankedTerms[1].includes(b.toLowerCase())) {
+                        keywords.push('<span class="keywords2">' + b + '</span>');
+                        rank += 3;
+                    } else if (rankedTerms[2].concat(rankedTerms[3]).includes(b.toLowerCase())) {
+                        keywords.push('<span class="keywords3">' + b + '</span>');
+                        rank += 3;
+                    } else if (rankedTerms[4].includes(b.toLowerCase())) {
+                        keywords.push('<span class="keywords4">' + b + '</span>');
+                        rank += 1;
+                    } else {
+                        keywords.push('<span class="keywords">' + b + '</span>');
                     }
+                }
+                console.log(k);
+                let titleArr = a.title.replace(/[_/,]/g, ' ').split(' ');
+                let abstractArr = a.abstract.replace(/[_/,]/g, ' ').split(' ');
+
+                if (titleArr.some(r => rankedTerms[0].includes(r))) {
+                    rank += 10;
+                }
+                if (abstractArr.some(r => rankedTerms[0].includes(r))) {
+                    rank += 3;
+                }
+                if (titleArr.some(r => rankedTerms[1].concat(rankedTerms[2]).concat(rankedTerms[3]).concat(rankedTerms[4]).includes(r))) {
+                    rank += 1;
+                }
+                if (abstractArr.some(r => rankedTerms[1].concat(rankedTerms[2]).concat(rankedTerms[3]).concat(rankedTerms[4]).includes(r))) {
+                    rank += 1;
+                }
+
+                results.push({
+                    id: a.id,
+                    title: a.title,
+                    abstract: a.abstract.substring(0, 500) + ' ..',
+                    keywords: keywords,
+                    rank: rank,
+                    relevance: ((rank / 12 * 100).toFixed(0) > 100) ? 100 : (rank / 12 * 100).toFixed(0)
                 });
             }
-            let rank = 1;
-            let keywords = [];
-            for (let b of k) {
-                if (rankedTerms[0].includes(b.toLowerCase())) {
-                    keywords.push('<span class="keywords1">' + b + '</span>');
-                    rank += 10;
-                } else if (rankedTerms[1].includes(b.toLowerCase())) {
-                    keywords.push('<span class="keywords2">' + b + '</span>');
-                    rank += 3;
-                } else if (rankedTerms[2].includes(b.toLowerCase())) {
-                    keywords.push('<span class="keywords3">' + b + '</span>');
-                    rank += 3;
-                } else if (rankedTerms[3].includes(b.toLowerCase())) {
-                    keywords.push('<span class="keywords4">' + b + '</span>');
-                    rank += 1;
-                } else {
-                    keywords.push('<span class="keywords">' + b + '</span>');
-                }
-            }
-            let c = new RegExp(rankedTerms[0][0], 'gi');
-            rank += (a.title.match(c) || []).length * 3;
-            rank += (a.abstract.match(c) || []).length * 2;
-            rank += (keywords.join().match(c) || []).length * 1;
-
-            results.push({
-                id: a.id,
-                title: a.title,
-                abstract: a.abstract.substring(0, 500) + ' ..',
-                keywords: keywords,
-                rank: rank,
-                relevance: ((rank / 12 * 100).toFixed(0) > 100) ? 100 : (rank / 12 * 100).toFixed(0)
-            });
         }
         return results
     },
 
     //******************************************************************************************************
-    printResults: function (results, rankedTerms) {
+    printResults: function (results, rankedTerms) { //HTML erstellen
 
         if (results.length == 19) {
             document.getElementById('1').innerHTML += 'more than ';
@@ -273,24 +301,24 @@ var micka = {
                                                     ${rankedTerms[0].join('</span> <span class="keywords1">')}
                                                 </span><br>`;
         if (rankedTerms[1].length > 0) {
-            document.getElementById('1').innerHTML += `- narrower terms: <span class="keywords2">
+            document.getElementById('1').innerHTML += `- related terms: <span class="keywords2">
                                                         ${rankedTerms[1].join('</span> <span class="keywords2">')}
                                                     </span> <br>`;
         }
-        if (rankedTerms[2].length > 0) {
-            document.getElementById('1').innerHTML += `- related terms: <span class="keywords3">
-                                                        ${rankedTerms[2].join('</span> <span class="keywords3">')}
+        if (rankedTerms[2].concat(rankedTerms[3]).length > 0) {
+            document.getElementById('1').innerHTML += `- narrower terms: <span class="keywords3">
+                                                        ${rankedTerms[2].concat(rankedTerms[3]).join('</span> <span class="keywords3">')}
                                                     </span> <br>`;
         }
-        if (rankedTerms[3].length > 0) {
+        if (rankedTerms[4].length > 0) {
             document.getElementById('1').innerHTML += `- and broader terms: <span class="keywords4">
-                                                        ${rankedTerms[3].join('</span> <span class="keywords4">')}
+                                                        ${rankedTerms[4].join('</span> <span class="keywords4">')}
                                                     </span>
                                                     <br>`;
         }
         document.getElementById('1').innerHTML += `in keywords, title and abstracts texts<hr>`;
 
-        let mickaViewer = 'https://egdi.geology.cz/records/';
+        let mickaViewer = 'https://egdi.geology.cz/record/basic/'; // basic für NEUEN Micka hinzufügen
         for (let record of results) {
             document.getElementById('1').innerHTML += `
                         <div>
