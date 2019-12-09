@@ -160,7 +160,7 @@ var micka = {
             .then(res => res.json())
             .then(data => {
                 results = micka.addResults(results, data, rankedTerms);
-                micka.printResults(results.sort((a, b) => b.rank - a.rank), [[`${searchTerm}`], [], [], [], []]);
+                micka.printResults(results.sort((a, b) => b.rank - a.rank), [[`${searchTerm}`], [], [], [], []], 'free text');
             });
     },
 
@@ -196,7 +196,7 @@ var micka = {
             fetchQ.push(micka.createQ2(cQ, 'subject like ') + '+OR+' + micka.createQ2(cQ, 'title like ') + '+OR+' + micka.createQ2(cQ, 'abstract like '));
         }
 
-        fetchQ.push(micka.createQ2(aQ, 'Anytext like '));
+        //fetchQ.push(micka.createQ2(aQ, 'Anytext like '));
 
 
         /*
@@ -220,12 +220,13 @@ var micka = {
                 await fetch(prefix + fetchQ[i] + suffix)
                     .then(res => res.json())
                     .then(data => {
+                    console.log(data);
                         results = micka.addResults(results, data, rankedTerms);
                     });
                 //console.log(i, results);
             }
             //console.log(results);
-            micka.printResults(results.sort((a, b) => b.rank - a.rank), rankedTerms);
+            micka.printResults(results.sort((a, b) => b.rank - a.rank), rankedTerms, 'semantic');
         })();
     },
 
@@ -295,7 +296,7 @@ var micka = {
     },
 
     //******************************************************************************************************
-    printResults: function (results, rankedTerms) { //HTML erstellen
+    printResults: function (results, rankedTerms, searchType) { //HTML erstellen
 
         if (results.length == 100) {
             document.getElementById('1').innerHTML += 'more than ';
@@ -321,7 +322,7 @@ var micka = {
                                                     </span>
                                                     <br>`;
         }
-        document.getElementById('1').innerHTML += `in keywords, title and abstracts texts<hr>`;
+        document.getElementById('1').innerHTML += `<strong>${searchType}</strong> search in keywords, title and abstracts texts<hr>`;
 
         let mickaViewer = 'https://egdi.geology.cz/record/basic/'; // basic für NEUEN Micka hinzufügen
         for (let record of results) {
