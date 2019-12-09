@@ -260,8 +260,8 @@ var micka = {
                     }
                 }
                 console.log(k);
-                let titleArr = a.title.replace(/[_/,]/g, ' ').split(' ');
-                let abstractArr = a.abstract.replace(/[_/,]/g, ' ').split(' ');
+                let titleArr = a.title.replace(/[_/,]/g, ' ').split(' ').map(a => a.toLowerCase());
+                let abstractArr = a.abstract.replace(/[_/,]/g, ' ').split(' ').map(a => a.toLowerCase());
 
                 if (titleArr.some(r => rankedTerms[0].includes(r))) {
                     rank += 10;
