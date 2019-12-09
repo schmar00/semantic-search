@@ -127,11 +127,11 @@ var micka = {
                         LIMIT 40`, data => {
             //let allTerms = data.results.bindings.map(a => a.L.value.toLowerCase());
             let rankedTerms = [];
-            console.log(data.results.bindings);
+            //console.log(data.results.bindings);
             for (let i = 0; i <= 5; i++) {
                 rankedTerms.push($.map(data.results.bindings.filter(item => item.rank.value == i), (a => (a.L.value.replace(' (theme)', '').toLowerCase()))));
             }
-            console.log(rankedTerms);
+            //console.log(rankedTerms);
             micka.clearPage();
             micka.queryCSW(rankedTerms); //alle Begriffe und in 5 arrays zerteilt
         });
@@ -149,17 +149,18 @@ var micka = {
     fullTextSearch: function (searchTerm) {
 
         let prefix = 'https://egdi.geology.cz/csw/?request=GetRecords&query=(';
-        let suffix = ')&format=application/json&language=eng&MaxRecords=100&ElementSetName=full';
+        let suffix = ')&format=application/json&language=eng&MaxRecords=100000&ElementSetName=full';
         let results = [];
         let rankedTerms = [[], [], [], [], []];
         rankedTerms[0].push(searchTerm.toLowerCase());
         micka.clearPage();
 
-        fetch(`${prefix}Anytext like '* ${searchTerm}*'${suffix}`)
+        //fetch(`${prefix}Anytext like '* ${searchTerm}*'${suffix}`)
+        fetch(`${prefix}Anytext like '*${searchTerm}*'${suffix}`)
             .then(res => res.json())
             .then(data => {
                 results = micka.addResults(results, data, rankedTerms);
-                micka.printResults(results.sort((a, b) => b.rank - a.rank), [[`${searchTerm}`], [], [], []]);
+                micka.printResults(results.sort((a, b) => b.rank - a.rank), [[`${searchTerm}`], [], [], [], []]);
             });
     },
 
@@ -195,6 +196,9 @@ var micka = {
             fetchQ.push(micka.createQ2(cQ, 'subject like ') + '+OR+' + micka.createQ2(cQ, 'title like ') + '+OR+' + micka.createQ2(cQ, 'abstract like '));
         }
 
+        fetchQ.push(micka.createQ2(aQ, 'Anytext like '));
+
+
         /*
         1) *keyword* => subject, title
         2) *narrower*, *related* => subject, title
@@ -205,11 +209,11 @@ var micka = {
         */
 
         let prefix = 'https://egdi.geology.cz/csw/?request=GetRecords&query=(';
-        let suffix = ')&format=application/json&language=eng&ElementSetName=full';
+        let suffix = ')&MaxRecords=100000&format=application/json&language=eng&ElementSetName=full';
         let results = []; //alle Ergebnisse (doppelte Einträge) mit id, title, abstract, keywords, rank, relevance,
 
         (async function loop() {
-            for (let i = 0; i < fetchQ.length; i++) { //to run all 5 queries
+            for (let i = 0; i < fetchQ.length; i++) { //to run all queries
                 if (results.length > 100) { //to get a maximum of x results
                     break;
                 }
@@ -218,9 +222,10 @@ var micka = {
                     .then(data => {
                         results = micka.addResults(results, data, rankedTerms);
                     });
-                console.log(i, results);
+                //console.log(i, results);
             }
-            micka.printResults(results.sort((a, b) => b.rank - a.rank), rankedTerms); //doppelte Einträge entfernen => funktioniert nicht!!
+            //console.log(results);
+            micka.printResults(results.sort((a, b) => b.rank - a.rank), rankedTerms);
         })();
     },
 
@@ -259,7 +264,7 @@ var micka = {
                         keywords.push('<span class="keywords">' + b + '</span>');
                     }
                 }
-                console.log(k);
+                //console.log(k);
                 let titleArr = a.title.replace(/[_/,]/g, ' ').split(' ').map(a => a.toLowerCase());
                 let abstractArr = a.abstract.replace(/[_/,]/g, ' ').split(' ').map(a => a.toLowerCase());
 
@@ -292,7 +297,7 @@ var micka = {
     //******************************************************************************************************
     printResults: function (results, rankedTerms) { //HTML erstellen
 
-        if (results.length == 19) {
+        if (results.length == 100) {
             document.getElementById('1').innerHTML += 'more than ';
         }
         document.getElementById('1').innerHTML += `<strong>
