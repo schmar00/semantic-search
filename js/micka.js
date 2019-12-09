@@ -127,11 +127,11 @@ var micka = {
                         LIMIT 40`, data => {
             //let allTerms = data.results.bindings.map(a => a.L.value.toLowerCase());
             let rankedTerms = [];
-            console.log(data.results.bindings);
+            //console.log(data.results.bindings);
             for (let i = 0; i <= 5; i++) {
                 rankedTerms.push($.map(data.results.bindings.filter(item => item.rank.value == i), (a => (a.L.value.replace(' (theme)', '').toLowerCase()))));
             }
-            console.log(rankedTerms);
+            //console.log(rankedTerms);
             micka.clearPage();
             micka.queryCSW(rankedTerms); //alle Begriffe und in 5 arrays zerteilt
         });
@@ -155,11 +155,12 @@ var micka = {
         rankedTerms[0].push(searchTerm.toLowerCase());
         micka.clearPage();
 
-        fetch(`${prefix}Anytext like '* ${searchTerm}*'${suffix}`)
+        //fetch(`${prefix}Anytext like '* ${searchTerm}*'${suffix}`)
+        fetch(`${prefix}Anytext like '*${searchTerm}*'${suffix}`)
             .then(res => res.json())
             .then(data => {
                 results = micka.addResults(results, data, rankedTerms);
-                micka.printResults(results.sort((a, b) => b.rank - a.rank), [[`${searchTerm}`], [], [], []]);
+                micka.printResults(results.sort((a, b) => b.rank - a.rank), [[`${searchTerm}`], [], [], [], []], 'full text');
             });
     },
 
@@ -195,6 +196,9 @@ var micka = {
             fetchQ.push(micka.createQ2(cQ, 'subject like ') + '+OR+' + micka.createQ2(cQ, 'title like ') + '+OR+' + micka.createQ2(cQ, 'abstract like '));
         }
 
+        //fetchQ.push(micka.createQ2(aQ, 'Anytext like '));
+
+
         /*
         1) *keyword* => subject, title
         2) *narrower*, *related* => subject, title
@@ -205,22 +209,24 @@ var micka = {
         */
 
         let prefix = 'https://egdi.geology.cz/csw/?request=GetRecords&query=(';
-        let suffix = ')&format=application/json&language=eng&ElementSetName=full';
+        let suffix = ')&MaxRecords=100000&format=application/json&language=eng&ElementSetName=full';
         let results = []; //alle Ergebnisse (doppelte Einträge) mit id, title, abstract, keywords, rank, relevance,
 
         (async function loop() {
-            for (let i = 0; i < fetchQ.length; i++) { //to run all 5 queries
+            for (let i = 0; i < fetchQ.length; i++) { //to run all queries
                 if (results.length > 100) { //to get a maximum of x results
                     break;
                 }
                 await fetch(prefix + fetchQ[i] + suffix)
                     .then(res => res.json())
                     .then(data => {
+                    console.log(data);
                         results = micka.addResults(results, data, rankedTerms);
                     });
-                console.log(i, results);
+                //console.log(i, results);
             }
-            micka.printResults(results.sort((a, b) => b.rank - a.rank), rankedTerms); //doppelte Einträge entfernen => funktioniert nicht!!
+            //console.log(results);
+            micka.printResults(results.sort((a, b) => b.rank - a.rank), rankedTerms, 'semantic');
         })();
     },
 
@@ -259,9 +265,9 @@ var micka = {
                         keywords.push('<span class="keywords">' + b + '</span>');
                     }
                 }
-                console.log(k);
-                let titleArr = a.title.replace(/[_/,]/g, ' ').split(' ');
-                let abstractArr = a.abstract.replace(/[_/,]/g, ' ').split(' ');
+                //console.log(k);
+                let titleArr = a.title.replace(/[_/,]/g, ' ').split(' ').map(a => a.toLowerCase());
+                let abstractArr = a.abstract.replace(/[_/,]/g, ' ').split(' ').map(a => a.toLowerCase());
 
                 if (titleArr.some(r => rankedTerms[0].includes(r))) {
                     rank += 10;
@@ -290,9 +296,9 @@ var micka = {
     },
 
     //******************************************************************************************************
-    printResults: function (results, rankedTerms) { //HTML erstellen
+    printResults: function (results, rankedTerms, searchType) { //HTML erstellen
 
-        if (results.length == 19) {
+        if (results.length > 99) {
             document.getElementById('1').innerHTML += 'more than ';
         }
         document.getElementById('1').innerHTML += `<strong>
@@ -316,7 +322,7 @@ var micka = {
                                                     </span>
                                                     <br>`;
         }
-        document.getElementById('1').innerHTML += `in keywords, title and abstracts texts<hr>`;
+        document.getElementById('1').innerHTML += `<strong>${searchType}</strong> search in keywords, title and abstracts texts<hr>`;
 
         let mickaViewer = 'https://egdi.geology.cz/record/basic/'; // basic für NEUEN Micka hinzufügen
         for (let record of results) {
