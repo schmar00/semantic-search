@@ -149,7 +149,7 @@ var micka = {
     fullTextSearch: function (searchTerm) {
 
         let prefix = 'https://egdi.geology.cz/csw/?request=GetRecords&query=(';
-        let suffix = ')&format=application/json&language=eng&MaxRecords=100000&ElementSetName=full';
+        let suffix = ')&format=application/json&language=eng&MaxRecords=100&ElementSetName=full';
         let results = [];
         let rankedTerms = [[], [], [], [], []];
         rankedTerms[0].push(searchTerm.toLowerCase());
@@ -160,7 +160,7 @@ var micka = {
             .then(res => res.json())
             .then(data => {
                 results = micka.addResults(results, data, rankedTerms);
-                micka.printResults(results.sort((a, b) => b.rank - a.rank), [[`${searchTerm}`], [], [], [], []], 'free text');
+                micka.printResults(results.sort((a, b) => b.rank - a.rank), [[`${searchTerm}`], [], [], [], []], 'full text');
             });
     },
 
@@ -298,7 +298,7 @@ var micka = {
     //******************************************************************************************************
     printResults: function (results, rankedTerms, searchType) { //HTML erstellen
 
-        if (results.length == 100) {
+        if (results.length > 99) {
             document.getElementById('1').innerHTML += 'more than ';
         }
         document.getElementById('1').innerHTML += `<strong>
