@@ -5,6 +5,32 @@ var micka = {
     init: function () {
         micka.USER_LANG = (navigator.language || navigator.language).substring(0, 2);
         let suppLang = ['en', 'cs', 'da', 'el', 'de', 'es', 'et', 'fi', 'fr', 'hr', 'hu', 'is', 'it', 'lt', 'nl', 'no', 'pl', 'pt', 'ro', 'sk', 'sl', 'sv', 'uk'];
+        let cat = ['Applied Geophysics', 'Fossil Resources', 'Geochemistry', 'Geochronology Stratigraphy', 'Geological Processes', 'Geothermal Energy', 'Hazard, Risk and Impact', 'Hydrogeology', 'Information System', 'Lithology', 'Mineral Resources', 'Modelling', 'Structural Geology', 'Subsurface Energy Storage', 'Subsurface Management'];
+
+        $('#categories').append(`<div class="custom-control custom-checkbox">
+                                        <input type="checkbox" class="custom-control-input selectAll" id="selectAll" checked="">
+                                        <label class="custom-control-label" for="selectAll">select all</label>
+                                    </div>`);
+
+        //$("#selectAll").prop('checked', false).parent().removeClass('active');
+
+        cat.forEach(function (c, index) {
+            $('#categories').append(`<div class="custom-control custom-checkbox">
+                                        <input type="checkbox" class="custom-control-input" id="catCheck${index}" checked="">
+                                        <label class="custom-control-label" for="catCheck${index}">${c}</label>
+                                    </div>`);
+        });
+
+        $('input[type=checkbox]').change(function () {
+            micka.initSearch();
+        })
+
+        $('#selectAll').change(function () {
+            $('input:checkbox').not(this).prop('checked', this.checked);
+        })
+
+        //console.log($('input[type=checkbox]:checked').next().toArray().map(a => a.textContent));
+
         if (!suppLang.includes(micka.USER_LANG)) {
             micka.USER_LANG = 'en';
         }
@@ -24,6 +50,7 @@ var micka = {
         micka.initSearch(); //provides js for fuse search 
         document.getElementById('lang').innerHTML = '[' + micka.USER_LANG + ']';
     },
+
 
     insertSearchCard: function (widgetID) {
         $('#searchInput').keydown(function (e) {
@@ -82,13 +109,20 @@ var micka = {
         });
     },
 
-    //**********************the initial sparql query to build the fuse (trie) object - stored in window****         
+    //**********************the initial sparql query to build the fuse (trie) object - stored in window****
     initSearch: function () {
+        let qCat = '';
+        if (!$('#selectAll').prop('checked')) {
+            qCat = `VALUES ?cat {'${$("input[type=checkbox]:checked").next().toArray().map(a => a.textContent).join('\'@en \'')}'@en}
+                    ?s <http://dbpedia.org/ontology/category> ?cat`;
+        }
+
         ws_micka.json(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#> 
                                     SELECT (GROUP_CONCAT(?s; separator = ';') as ?URIs) ?L 
                                     WHERE { 
                                     VALUES ?p {skos:prefLabel skos:altLabel} 
                                     ?s a skos:Concept; ?p ?L . FILTER(lang(?L)="${micka.USER_LANG}")
+                                    ${qCat}
                                     }
                                     GROUP BY ?L`, jsonData => {
             const options = {
@@ -104,6 +138,8 @@ var micka = {
 
     //************************perform the search for a selected term ************************************         
     semanticSearch: function (URIs, origLabel) {
+        //console.log($('#selectAll').prop('checked'));
+
         $('#searchInput').val(origLabel);
         // ohne select (group_concat(distinct ?c; separator = '|') as ?category)
         ws_micka.json(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
@@ -220,7 +256,7 @@ var micka = {
                 await fetch(prefix + fetchQ[i] + suffix)
                     .then(res => res.json())
                     .then(data => {
-                    console.log(data);
+                        console.log(data);
                         results = micka.addResults(results, data, rankedTerms);
                     });
                 //console.log(i, results);
