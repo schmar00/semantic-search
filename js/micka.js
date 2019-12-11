@@ -5,7 +5,7 @@ var micka = {
     init: function () {
         micka.USER_LANG = (navigator.language || navigator.language).substring(0, 2);
         let suppLang = ['en', 'cs', 'da', 'el', 'de', 'es', 'et', 'fi', 'fr', 'hr', 'hu', 'is', 'it', 'lt', 'nl', 'no', 'pl', 'pt', 'ro', 'sk', 'sl', 'sv', 'uk'];
-        let cat = ['Applied Geophysics', 'Fossil Resources', 'Geochemistry', 'Geochronology Stratigraphy', 'Geological Processes', 'Geothermal Energy', 'Hazard, Risk and Impact', 'Hydrogeology', 'Information System', 'Lithology', 'Mineral Resources', 'Modelling', 'Structural Geology', 'Subsurface Energy Storage', 'Subsurface Management'];
+        let cat = ['Applied Geophysics', 'Fossil Resources', 'Geochemistry', 'Geochronology-Stratigraphy', 'Geological Processes', 'Geothermal Energy', 'Hazard, Risk and Impact', 'Hydrogeology', 'Information System', 'Lithology', 'Mineral Resources', 'Modelling', 'Structural Geology', 'Subsurface Energy Storage', 'Subsurface Management'];
 
         $('#categories').append(`<div class="custom-control custom-checkbox">
                                         <input type="checkbox" class="custom-control-input selectAll" id="selectAll" checked="">
