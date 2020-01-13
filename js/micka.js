@@ -7,29 +7,18 @@ var micka = {
         let suppLang = ['en', 'cs', 'da', 'el', 'de', 'es', 'et', 'fi', 'fr', 'hr', 'hu', 'is', 'it', 'lt', 'nl', 'no', 'pl', 'pt', 'ro', 'sk', 'sl', 'sv', 'uk'];
         let cat = ['Applied Geophysics', 'Fossil Resources', 'Geochemistry', 'Geochronology-Stratigraphy', 'Geological Processes', 'Geothermal Energy', 'Hazard, Risk and Impact', 'Hydrogeology', 'Information System', 'Lithology', 'Mineral Resources', 'Modelling', 'Structural Geology', 'Subsurface Energy Storage', 'Subsurface Management'];
 
-        $('#categories').append(`<div class="custom-control custom-checkbox">
-                                        <input type="checkbox" class="custom-control-input selectAll" id="selectAll" checked="">
-                                        <label class="custom-control-label" for="selectAll">select all</label>
-                                    </div>`);
-
-        //$("#selectAll").prop('checked', false).parent().removeClass('active');
-
         cat.forEach(function (c, index) {
-            $('#categories').append(`<div class="custom-control custom-checkbox">
-                                        <input type="checkbox" class="custom-control-input" id="catCheck${index}" checked="">
-                                        <label class="custom-control-label" for="catCheck${index}">${c}</label>
-                                    </div>`);
+            $('#searchCategories').append(`<option value="${index}" selected="selected">${c}</option>`);
         });
 
-        $('input[type=checkbox]').change(function () {
-            micka.initSearch();
-        })
-
-        $('#selectAll').change(function () {
-            $('input:checkbox').not(this).prop('checked', this.checked);
-        })
-
-        //console.log($('input[type=checkbox]:checked').next().toArray().map(a => a.textContent));
+        let selectedCategories = '';
+        $('#searchCategories').multiselect({
+            includeSelectAllOption: true,
+            onDropdownHide: function (option, checked) {
+                selectedCategories = $('#searchCategories option:selected').map((a, item) => item.label).toArray().join('\'@en \'');
+                micka.initSearch(selectedCategories);
+            },
+        });
 
         if (!suppLang.includes(micka.USER_LANG)) {
             micka.USER_LANG = 'en';
@@ -47,7 +36,7 @@ var micka = {
             micka.search(decodeURI(urlParams.get('search')));
 
         }
-        micka.initSearch(); //provides js for fuse search 
+        micka.initSearch(selectedCategories); //provides js for fuse search
         document.getElementById('lang').innerHTML = '[' + micka.USER_LANG + ']';
     },
 
@@ -110,21 +99,23 @@ var micka = {
     },
 
     //**********************the initial sparql query to build the fuse (trie) object - stored in window****
-    initSearch: function () {
+
+    initSearch: function (selectedCategories) {
+
         let qCat = '';
-        if (!$('#selectAll').prop('checked')) {
-            qCat = `VALUES ?cat {'${$("input[type=checkbox]:checked").next().toArray().map(a => a.textContent).join('\'@en \'')}'@en}
+        if (selectedCategories !== '') {
+            qCat = `VALUES ?cat {'${selectedCategories}'@en}
                     ?s <http://dbpedia.org/ontology/category> ?cat`;
         }
 
-        ws_micka.json(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#> 
-                                    SELECT (GROUP_CONCAT(?s; separator = ';') as ?URIs) ?L 
-                                    WHERE { 
-                                    VALUES ?p {skos:prefLabel skos:altLabel} 
-                                    ?s a skos:Concept; ?p ?L . FILTER(lang(?L)="${micka.USER_LANG}")
-                                    ${qCat}
-                                    }
-                                    GROUP BY ?L`, jsonData => {
+        ws_micka.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
+                        SELECT (GROUP_CONCAT(?s; separator = ';') as ?URIs) ?L
+                        WHERE {
+                        VALUES ?p {skos:prefLabel skos:altLabel}
+                        ?s a skos:Concept; ?p ?L . FILTER(lang(?L)="${micka.USER_LANG}")
+                        ${qCat}
+                        }
+                        GROUP BY ?L`, jsonData => {
             const options = {
                 shouldSort: true,
                 tokenize: true,
@@ -142,7 +133,7 @@ var micka = {
 
         $('#searchInput').val(origLabel);
         // ohne select (group_concat(distinct ?c; separator = '|') as ?category)
-        ws_micka.json(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
+        ws_micka.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
                         PREFIX dbp:<http://dbpedia.org/ontology/>
                         select distinct (min(?r) as ?rank) ?L
                         where {
@@ -157,6 +148,10 @@ var micka = {
                         {?s skos:narrower+ ?o . ?o ?l ?L filter(lang(?L)='en') bind(3 as ?r)}
                         union
                         {?s skos:broader ?o . ?o ?l ?L filter(lang(?L)='en') bind(4 as ?r)}
+                        FILTER(!regex(str(?L), '/'))
+                        FILTER(!regex(str(?L), ','))
+                        FILTER(!regex(str(?L), ' and '))
+                        FILTER(!regex(str(?L), ' or '))
                         }
                         group by ?L
                         order by ?rank
@@ -169,6 +164,7 @@ var micka = {
             }
             //console.log(rankedTerms);
             micka.clearPage();
+            document.getElementById('spinner').style.visibility = 'visible';
             micka.queryCSW(rankedTerms); //alle Begriffe und in 5 arrays zerteilt
         });
     },
@@ -197,6 +193,7 @@ var micka = {
             .then(data => {
                 results = micka.addResults(results, data, rankedTerms);
                 micka.printResults(results.sort((a, b) => b.rank - a.rank), [[`${searchTerm}`], [], [], [], []], 'full text');
+                document.getElementById('spinner').style.visibility = 'collapse';
             });
     },
 
@@ -245,24 +242,31 @@ var micka = {
         */
 
         let prefix = 'https://egdi.geology.cz/csw/?request=GetRecords&query=(';
-        let suffix = ')&MaxRecords=100000&format=application/json&language=eng&ElementSetName=full';
+        let suffix = ')&MaxRecords=10000&format=application/json&language=eng&ElementSetName=full';
         let results = []; //alle Ergebnisse (doppelte Einträge) mit id, title, abstract, keywords, rank, relevance,
 
         (async function loop() {
             for (let i = 0; i < fetchQ.length; i++) { //to run all queries
-                if (results.length > 100) { //to get a maximum of x results
+                if (results.length > $('#maxResults').val()) { //to get a maximum of x results
                     break;
                 }
-                await fetch(prefix + fetchQ[i] + suffix)
-                    .then(res => res.json())
-                    .then(data => {
-                        console.log(data);
-                        results = micka.addResults(results, data, rankedTerms);
-                    });
-                //console.log(i, results);
+
+                try {
+                    await fetch(prefix + fetchQ[i] + suffix)
+                        .then(res => res.json())
+                        .then(data => {
+                            //console.log(fetchQ[i], data);
+                            results = micka.addResults(results, data, rankedTerms);
+                        });
+                    console.log(i, results);
+                } catch (e) {
+                    console.log(e);
+                }
+
             }
             //console.log(results);
             micka.printResults(results.sort((a, b) => b.rank - a.rank), rankedTerms, 'semantic');
+            document.getElementById('spinner').style.visibility = 'collapse';
         })();
     },
 
@@ -384,6 +388,7 @@ var micka = {
                         </p>
                         <hr>`;
         }
+
     },
 
     __upperConcept: {},
