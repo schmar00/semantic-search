@@ -135,11 +135,11 @@ var micka = {
         // ohne select (group_concat(distinct ?c; separator = '|') as ?category)
         ws_micka.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
                         PREFIX dbp:<http://dbpedia.org/ontology/>
-                        select distinct (min(?r) as ?rank) ?L
+                        select distinct (min(?r) as ?rank) (lcase(str(?L)) as ?label)
                         where {
                         values ?s {<${URIs.replace(/;/g, "> <")}>}
                         values ?l {skos:altLabel skos:prefLabel skos:hiddenLabel}
-                        {?s ?l ?L filter(lang(?L)='en') bind(0 as ?r)}
+                        {?s ?l ?L filter(lang(?L)='en' || lang(?L)='de' || lang(?L)='es' || lang(?L)='fr' || lang(?L)='cs') bind(0 as ?r)}
                         union
                         {?s skos:related ?o . ?o ?l ?L filter(lang(?L)='en') bind(1 as ?r)}
                         union
@@ -160,7 +160,7 @@ var micka = {
             let rankedTerms = [];
             //console.log(data.results.bindings);
             for (let i = 0; i <= 5; i++) {
-                rankedTerms.push($.map(data.results.bindings.filter(item => item.rank.value == i), (a => (a.L.value.replace(' (theme)', '').toLowerCase()))));
+                rankedTerms.push($.map(data.results.bindings.filter(item => item.rank.value == i), (a => (a.label.value.replace(' (theme)', '').toLowerCase()))));
             }
             //console.log(rankedTerms);
             micka.clearPage();
@@ -181,7 +181,7 @@ var micka = {
     fullTextSearch: function (searchTerm) {
 
         let prefix = 'https://egdi.geology.cz/csw/?request=GetRecords&query=(';
-        let suffix = ')&format=application/json&language=eng&MaxRecords=100&ElementSetName=full';
+        let suffix = `)&format=application/json&language=eng&MaxRecords=${parseInt($('#maxResults').val(), 10)}&ElementSetName=full`;
         let results = [];
         let rankedTerms = [[], [], [], [], []];
         rankedTerms[0].push(searchTerm.toLowerCase());
@@ -242,12 +242,13 @@ var micka = {
         */
 
         let prefix = 'https://egdi.geology.cz/csw/?request=GetRecords&query=(';
-        let suffix = ')&MaxRecords=10000&format=application/json&language=eng&ElementSetName=full';
+        let suffix = `)&MaxRecords=${parseInt($('#maxResults').val(), 10)}&format=application/json&language=eng&ElementSetName=full`;
         let results = []; //alle Ergebnisse (doppelte Einträge) mit id, title, abstract, keywords, rank, relevance,
 
         (async function loop() {
             for (let i = 0; i < fetchQ.length; i++) { //to run all queries
-                if (results.length > $('#maxResults').val()) { //to get a maximum of x results
+
+                if (results.length > parseInt($('#maxResults').val(), 10)) { //to get a maximum of x results
                     break;
                 }
 
@@ -258,7 +259,7 @@ var micka = {
                             //console.log(fetchQ[i], data);
                             results = micka.addResults(results, data, rankedTerms);
                         });
-                    console.log(i, results);
+                    //console.log(i, results);
                 } catch (e) {
                     console.log(e);
                 }
@@ -338,7 +339,7 @@ var micka = {
     //******************************************************************************************************
     printResults: function (results, rankedTerms, searchType) { //HTML erstellen
 
-        if (results.length > 99) {
+        if (results.length > parseInt($('#maxResults').val(), 10)) {
             document.getElementById('1').innerHTML += 'more than ';
         }
         document.getElementById('1').innerHTML += `<strong>
