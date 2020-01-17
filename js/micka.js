@@ -139,7 +139,7 @@ var micka = {
                         where {
                         values ?s {<${URIs.replace(/;/g, "> <")}>}
                         values ?l {skos:altLabel skos:prefLabel skos:hiddenLabel}
-                        {?s ?l ?L filter(lang(?L)='en' || lang(?L)='de' || lang(?L)='es' || lang(?L)='fr' || lang(?L)='cs') bind(0 as ?r)}
+                        {?s ?l ?L filter(lang(?L)='en' || lang(?L)='de' || lang(?L)='es' || lang(?L)='fr') bind(0 as ?r)}
                         union
                         {?s skos:related ?o . ?o ?l ?L filter(lang(?L)='en') bind(1 as ?r)}
                         union
@@ -160,7 +160,7 @@ var micka = {
             let rankedTerms = [];
             //console.log(data.results.bindings);
             for (let i = 0; i <= 5; i++) {
-                rankedTerms.push($.map(data.results.bindings.filter(item => item.rank.value == i), (a => (a.label.value.replace(' (theme)', '').toLowerCase()))));
+                rankedTerms.push($.map(data.results.bindings.filter(item => item.rank.value == i), (a => (a.label.value.toLowerCase()))));
             }
             //console.log(rankedTerms);
             micka.clearPage();
@@ -187,14 +187,17 @@ var micka = {
         rankedTerms[0].push(searchTerm.toLowerCase());
         micka.clearPage();
 
-        //fetch(`${prefix}Anytext like '* ${searchTerm}*'${suffix}`)
-        fetch(`${prefix}Anytext like '*${searchTerm}*'${suffix}`)
-            .then(res => res.json())
-            .then(data => {
-                results = micka.addResults(results, data, rankedTerms);
+        fetch(`${prefix}Anytext like '${searchTerm}'${suffix}`)
+            .then(res => res.text())
+            .then(text => {
+                if (text.includes('<!DOCTYPE html>')) {
+                    text = text.split('<!DOCTYPE html>')[0] + ']}';
+                }
+                results = micka.addResults(results, JSON.parse(text), rankedTerms);
                 micka.printResults(results.sort((a, b) => b.rank - a.rank), [[`${searchTerm}`], [], [], [], []], 'full text');
                 document.getElementById('spinner').style.visibility = 'collapse';
             });
+
     },
 
     //******************************************************************************************************
@@ -248,21 +251,20 @@ var micka = {
         (async function loop() {
             for (let i = 0; i < fetchQ.length; i++) { //to run all queries
 
-                if (results.length > parseInt($('#maxResults').val(), 10)) { //to get a maximum of x results
+                if (results.length > parseInt($('#maxResults').val(), 10) - 1) { //to get a maximum of x results
                     break;
                 }
 
-                try {
-                    await fetch(prefix + fetchQ[i] + suffix)
-                        .then(res => res.json())
-                        .then(data => {
-                            //console.log(fetchQ[i], data);
-                            results = micka.addResults(results, data, rankedTerms);
-                        });
-                    //console.log(i, results);
-                } catch (e) {
-                    console.log(e);
-                }
+
+                await fetch(prefix + fetchQ[i] + suffix)
+                    .then(res => res.text())
+                    .then(text => {
+                        if (text.includes('<!DOCTYPE html>')) { //repair json+html mix
+                            text = text.split('<!DOCTYPE html>')[0] + ']}';
+                        }
+                        results = micka.addResults(results, JSON.parse(text), rankedTerms);
+                    });
+                //console.log(i, results);
 
             }
             //console.log(results);
@@ -465,3 +467,47 @@ https://egdi.geology.cz/csw/?request=GetRecords
 
 //***********************************************************************************************************      
 //********************************END************************************************************************
+
+/*
+MICKA Error
+
+< !DOCTYPE html > < !--"' --></script></style></noscript></xmp> <
+			meta charset = "utf-8" >
+			<
+			meta name = "robots"
+			content = "noindex" >
+			<
+			title > Server Error < /title>
+
+			<
+			style > #error - body {
+				background: white;width: 500 px;margin: 70 px auto;padding: 10 px 20 px
+			}#
+			error - body h1 {
+				font: bold 47 px / 1.5 sans - serif;background: none;color: #333; margin: .6em 0 }
+	# error - body p {
+						font: 21 px / 1.5 Georgia,
+						serif;background: none;color: #333; margin: 1.5em 0 }
+	# error - body small {
+								font - size: 70 % ;
+								color: gray
+							} <
+							/style>
+
+							<
+							div id = "error-body" >
+							<
+							h1 > Server Error < /h1>
+
+							<
+							p > We 're sorry! The server encountered an internal error and
+						was unable to complete your request.Please
+						try again later. < /p>
+
+						<
+						p > < small > error 500 < /small></p >
+						<
+						/div>
+
+
+*/
