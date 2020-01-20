@@ -45,13 +45,30 @@ var micka = {
         $('#searchInput').keydown(function (e) {
             switch (e.which) {
                 case 13:
-                    if (Object.keys(micka.__upperConcept).length !== 0) {
-                        micka.semanticSearch(micka.__upperConcept.uri, micka.__upperConcept.label);
-                        $('#dropdown').empty();
-                        micka.__upperConcept = {};
-                    } else {
-                        micka.fullTextSearch($('#searchInput').val());
+                    //alert(similarity($('#searchInput').val(), micka.__upperConcept.label));
+                    let sT = $('#searchInput').val();
+                    //console.log(sT);
+                    if (sT.length !== 0) {
+                        if (Object.keys(micka.__upperConcept).length !== 0) {
+                            if (similarity(sT, micka.__upperConcept.label) > 0.7) {
+                                let searchInfo = '';
+                                if (sT !== micka.__upperConcept.label) {
+                                    searchInfo = `searched for <span class="keywords1">${micka.__upperConcept.label}</span>
+                                                  <br>
+                                                  search instead for <span class="keywords1" style="cursor:pointer;" onclick="micka.fullTextSearch('${sT}');">${sT}</span>
+                                                <hr>`;
+                                }
+                                micka.semanticSearch(micka.__upperConcept.uri, micka.__upperConcept.label, searchInfo);
+                            } else {
+                                micka.fullTextSearch(sT);
+                            }
+                            $('#dropdown').empty();
+                            micka.__upperConcept = {};
+                        } else {
+                            micka.fullTextSearch(sT);
+                        }
                     }
+                    document.getElementById('spinner').style.visibility = 'visible';
                     break;
                 case 38: // up
                     micka.__selectSearchLink(1);
@@ -61,6 +78,7 @@ var micka = {
                     break;
             };
         });
+
 
         $('#searchBtn').click(function (e) {
             micka.fullTextSearch($('#searchInput').val());
@@ -88,7 +106,7 @@ var micka = {
                     $.each(autoSuggest.slice(0, 10), function (index, value) {
                         $('#dropdown').append(` <tr>
                                                 <td class="searchLink dropdown-item" 
-                                                    onclick="micka.semanticSearch('${value.URIs.value}','${value.L.value}');" data-uri="${value.URIs.value}", data-label="${value.L.value}">
+                                                    onclick="micka.semanticSearch('${value.URIs.value}','${value.L.value}','');" data-uri="${value.URIs.value}", data-label="${value.L.value}">
                                                     ${value.L.value}
                                                 </td>
                                             </tr>`);
@@ -128,7 +146,7 @@ var micka = {
     },
 
     //************************perform the search for a selected term ************************************         
-    semanticSearch: function (URIs, origLabel) {
+    semanticSearch: function (URIs, origLabel, searchInfo) {
         //console.log($('#selectAll').prop('checked'));
 
         $('#searchInput').val(origLabel);
@@ -164,7 +182,7 @@ var micka = {
             }
             //console.log(rankedTerms);
             micka.clearPage();
-            document.getElementById('spinner').style.visibility = 'visible';
+            $('#searchInfo').html(searchInfo);
             micka.queryCSW(rankedTerms); //alle Begriffe und in 5 arrays zerteilt
         });
     },
@@ -181,21 +199,20 @@ var micka = {
     fullTextSearch: function (searchTerm) {
 
         let prefix = 'https://egdi.geology.cz/csw/?request=GetRecords&query=(';
-        let suffix = `)&format=application/json&language=eng&MaxRecords=${parseInt($('#maxResults').val(), 10)}&ElementSetName=full`;
+        let suffix = `)&format=application/json&language=eng&MaxRecords=9999&ElementSetName=full`;
         let results = [];
         let rankedTerms = [[], [], [], [], []];
-        rankedTerms[0].push(searchTerm.toLowerCase());
-        micka.clearPage();
+        rankedTerms[0] = searchTerm.toLowerCase().split(' ');
+        micka.clearPage(); //(subject='Geology'+AND+Subject='Hydrogeology') FullText%3D%27GBA%27
 
-        fetch(`${prefix}Anytext like '${searchTerm}'${suffix}`)
+        fetch(`${prefix}FullText%3D'${searchTerm.replace(/ /g, "' AND FullText%3D'")}'${suffix}`)
             .then(res => res.text())
             .then(text => {
                 if (text.includes('<!DOCTYPE html>')) {
                     text = text.split('<!DOCTYPE html>')[0] + ']}';
                 }
                 results = micka.addResults(results, JSON.parse(text), rankedTerms);
-                micka.printResults(results.sort((a, b) => b.rank - a.rank), [[`${searchTerm}`], [], [], [], []], 'full text');
-                document.getElementById('spinner').style.visibility = 'collapse';
+                micka.printResults(results.sort((a, b) => b.rank - a.rank), [rankedTerms[0], [], [], [], []], 'full text (exact matches)');
             });
 
     },
@@ -216,20 +233,24 @@ var micka = {
         let bQ = rankedTerms[1].concat(rankedTerms[2]);
         let cQ = rankedTerms[3].concat(rankedTerms[4]);
 
-        fetchQ.push(micka.createQ2(aQ, 'subject like ') + '+OR+' + micka.createQ2(aQ, 'title like '));
+        //Title like '*gba*' OR Abstract like '*gba*'
+        //Title%20like%20%27*gba*%27%20OR%20Abstract%20like%20%27*gba*%27
+
+
+        fetchQ.push(micka.createQ1(aQ, 'Subject=') + ' OR ' + micka.createQ2(aQ, 'Title like '));
 
         if (bQ.length > 0) {
-            fetchQ.push(micka.createQ2(bQ, 'subject like ') + '+OR+' + micka.createQ2(bQ, 'title like '));
+            fetchQ.push(micka.createQ1(bQ, 'Subject=') + ' OR ' + micka.createQ2(bQ, 'Title like '));
         }
 
-        fetchQ.push(micka.createQ2(aQ, 'abstract like '));
+        fetchQ.push(micka.createQ2(aQ, 'Abstract like '));
 
         if (bQ.length > 0) {
-            fetchQ.push(micka.createQ2(bQ, 'abstract like '));
+            fetchQ.push(micka.createQ2(bQ, 'Abstract like '));
         }
 
         if (cQ.length > 0) {
-            fetchQ.push(micka.createQ2(cQ, 'subject like ') + '+OR+' + micka.createQ2(cQ, 'title like ') + '+OR+' + micka.createQ2(cQ, 'abstract like '));
+            fetchQ.push(micka.createQ1(cQ, 'Subject=') + ' OR ' + micka.createQ2(cQ, 'Title like ') + ' OR ' + micka.createQ2(cQ, 'Abstract like '));
         }
 
         //fetchQ.push(micka.createQ2(aQ, 'Anytext like '));
@@ -249,27 +270,28 @@ var micka = {
         let results = []; //alle Ergebnisse (doppelte Einträge) mit id, title, abstract, keywords, rank, relevance,
 
         (async function loop() {
+
             for (let i = 0; i < fetchQ.length; i++) { //to run all queries
 
                 if (results.length > parseInt($('#maxResults').val(), 10) - 1) { //to get a maximum of x results
                     break;
                 }
 
-
-                await fetch(prefix + fetchQ[i] + suffix)
-                    .then(res => res.text())
-                    .then(text => {
-                        if (text.includes('<!DOCTYPE html>')) { //repair json+html mix
-                            text = text.split('<!DOCTYPE html>')[0] + ']}';
-                        }
-                        results = micka.addResults(results, JSON.parse(text), rankedTerms);
-                    });
-                //console.log(i, results);
+                if (fetchQ[i].length > 5) {
+                    await fetch(prefix + fetchQ[i] + suffix)
+                        .then(res => res.text())
+                        .then(text => {
+                            if (text.includes('<!DOCTYPE html>')) { //repair json+html mix
+                                text = text.split('<!DOCTYPE html>')[0] + ']}';
+                            }
+                            results = micka.addResults(results, JSON.parse(text), rankedTerms);
+                        });
+                    //console.log(i, results);
+                }
 
             }
             //console.log(results);
             micka.printResults(results.sort((a, b) => b.rank - a.rank), rankedTerms, 'semantic');
-            document.getElementById('spinner').style.visibility = 'collapse';
         })();
     },
 
@@ -311,6 +333,7 @@ var micka = {
                 //console.log(k);
                 let titleArr = a.title.replace(/[_/,]/g, ' ').split(' ').map(a => a.toLowerCase());
                 let abstractArr = a.abstract.replace(/[_/,]/g, ' ').split(' ').map(a => a.toLowerCase());
+                //console.log(titleArr,rankedTerms[0]);
 
                 if (titleArr.some(r => rankedTerms[0].includes(r))) {
                     rank += 10;
@@ -391,6 +414,8 @@ var micka = {
                         </p>
                         <hr>`;
         }
+
+        document.getElementById('spinner').style.visibility = 'collapse';
 
     },
 
@@ -511,3 +536,45 @@ MICKA Error
 
 
 */
+
+
+function similarity(s1, s2) {
+    var longer = s1;
+    var shorter = s2;
+    if (s1.length < s2.length) {
+        longer = s2;
+        shorter = s1;
+    }
+    var longerLength = longer.length;
+    if (longerLength == 0) {
+        return 1.0;
+    }
+    return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength);
+}
+
+function editDistance(s1, s2) {
+    s1 = s1.toLowerCase();
+    s2 = s2.toLowerCase();
+
+    var costs = new Array();
+    for (var i = 0; i <= s1.length; i++) {
+        var lastValue = i;
+        for (var j = 0; j <= s2.length; j++) {
+            if (i == 0)
+                costs[j] = j;
+            else {
+                if (j > 0) {
+                    var newValue = costs[j - 1];
+                    if (s1.charAt(i - 1) != s2.charAt(j - 1))
+                        newValue = Math.min(Math.min(newValue, lastValue),
+                            costs[j]) + 1;
+                    costs[j - 1] = lastValue;
+                    lastValue = newValue;
+                }
+            }
+        }
+        if (i > 0)
+            costs[s2.length] = lastValue;
+    }
+    return costs[s2.length];
+}
