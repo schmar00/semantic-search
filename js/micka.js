@@ -206,7 +206,7 @@ var micka = {
         rankedTerms[0] = searchTerm.toLowerCase().split(' ');
         micka.clearPage(); //(subject='Geology'+AND+Subject='Hydrogeology') FullText%3D%27GBA%27
 
-        console.log(`${prefix}FullText%3D'${searchTerm.replace(/ /g, "' AND FullText%3D'")}'${suffix}`);
+        //console.log(`${prefix}FullText%3D'${searchTerm.replace(/ /g, "' AND FullText%3D'")}'${suffix}`);
 
         fetch(`${prefix}FullText%3D'${searchTerm.replace(/ /g, "' AND FullText%3D'")}'${suffix}`)
             .then(res => res.text())
@@ -369,6 +369,7 @@ var micka = {
     },
 
     //******************************************************************************************************
+
     printResults: function (results, rankedTerms, searchType) { //HTML erstellen
 
         $('#1').html(`<strong>${searchType}</strong> search in keywords, title and abstracts texts - `);
@@ -393,7 +394,12 @@ var micka = {
         $('#1').append(`<hr>`);
 
         let mickaViewer = 'https://egdi.geology.cz/record/basic/'; // basic für NEUEN Micka hinzufügen
+        //let newAbstract = rankedTerms[1].concat(rankedTerms[2].concat(rankedTerms[3])
+
         for (let record of results) {
+            let newAbstract = record.abstract;
+            rankedTerms.flat().forEach(x => newAbstract = newAbstract.split(x).join('<strong>' + x + '</strong>'));
+
             document.getElementById('1').innerHTML += `
                         <div>
                             <a href="${mickaViewer + record.id}">
@@ -408,7 +414,7 @@ var micka = {
                         <br>
                         <p style="line-height: 80%;">
                             <small>
-                                ${record.abstract}
+                                ${newAbstract}
                             </small>
                         </p>
                         <p  style="line-height: 80%;">
@@ -416,17 +422,12 @@ var micka = {
                         </p>
                         <hr>`;
         }
-
         document.getElementById('spinner').style.visibility = 'collapse';
-
-
-        document.getElementById('spinner').style.visibility = 'collapse';
-
     },
 
     //******************************************************************************************************
 
-    newSearch: function (term) { //term in 99% english lang
+    newSearch: function (term) {
 
         try {
             let uri = window.fuse.list.find(a => a.L.value === term).URIs.value;
@@ -454,7 +455,6 @@ var micka = {
     },
 
     //******************************************************************************************************
-
     __upperConcept: {},
     __selectSearchLink: function (up, click) {
         var options = $(".searchLink");

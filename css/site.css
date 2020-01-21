@@ -12,6 +12,7 @@
 #dropdown td {
     padding: .1rem;
     padding-left: .75rem;
+    cursor: pointer;
 }
 
 .multiselect-selected-text,
