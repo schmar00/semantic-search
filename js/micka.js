@@ -40,35 +40,37 @@ var micka = {
         document.getElementById('lang').innerHTML = '[' + micka.USER_LANG + ']';
     },
 
+    startSearch: function (e) {
+        let sT = $('#searchInput').val();
+        //console.log(sT);
+        if (sT.length !== 0) {
+            if (Object.keys(micka.__upperConcept).length !== 0) {
+                if (similarity(sT, micka.__upperConcept.label) > 0.7) {
+                    let searchInfo = '';
+                    if (sT !== micka.__upperConcept.label) {
+                        searchInfo = `searched for <span class="keywords1">${micka.__upperConcept.label}</span>
+                                                  <br>
+                                                  search instead for <span class="keywords1" onclick="micka.fullTextSearch('${sT}');">${sT}</span>
+                                                <hr>`;
+                    }
+                    micka.semanticSearch(micka.__upperConcept.uri, micka.__upperConcept.label, searchInfo);
+                } else {
+                    micka.fullTextSearch(sT);
+                }
+                $('#dropdown').empty();
+                micka.__upperConcept = {};
+            } else {
+                micka.fullTextSearch(sT);
+            }
+        }
+        document.getElementById('spinner').style.visibility = 'visible';
+    },
 
     insertSearchCard: function (widgetID) {
         $('#searchInput').keydown(function (e) {
             switch (e.which) {
                 case 13:
-                    //alert(similarity($('#searchInput').val(), micka.__upperConcept.label));
-                    let sT = $('#searchInput').val();
-                    //console.log(sT);
-                    if (sT.length !== 0) {
-                        if (Object.keys(micka.__upperConcept).length !== 0) {
-                            if (similarity(sT, micka.__upperConcept.label) > 0.7) {
-                                let searchInfo = '';
-                                if (sT !== micka.__upperConcept.label) {
-                                    searchInfo = `searched for <span class="keywords1">${micka.__upperConcept.label}</span>
-                                                  <br>
-                                                  search instead for <span class="keywords1" style="cursor:pointer;" onclick="micka.fullTextSearch('${sT}');">${sT}</span>
-                                                <hr>`;
-                                }
-                                micka.semanticSearch(micka.__upperConcept.uri, micka.__upperConcept.label, searchInfo);
-                            } else {
-                                micka.fullTextSearch(sT);
-                            }
-                            $('#dropdown').empty();
-                            micka.__upperConcept = {};
-                        } else {
-                            micka.fullTextSearch(sT);
-                        }
-                    }
-                    document.getElementById('spinner').style.visibility = 'visible';
+                    micka.startSearch();
                     break;
                 case 38: // up
                     micka.__selectSearchLink(1);
@@ -79,9 +81,8 @@ var micka = {
             };
         });
 
-
         $('#searchBtn').click(function (e) {
-            micka.fullTextSearch($('#searchInput').val());
+            micka.startSearch();
         });
 
         $('#searchInput').focusout(function () {
@@ -199,11 +200,13 @@ var micka = {
     fullTextSearch: function (searchTerm) {
 
         let prefix = 'https://egdi.geology.cz/csw/?request=GetRecords&query=(';
-        let suffix = `)&format=application/json&language=eng&MaxRecords=9999&ElementSetName=full`;
+        let suffix = `)&format=application/json&language=eng&MaxRecords=${parseInt($('#maxResults').val(), 10)+100}&ElementSetName=full`;
         let results = [];
         let rankedTerms = [[], [], [], [], []];
         rankedTerms[0] = searchTerm.toLowerCase().split(' ');
         micka.clearPage(); //(subject='Geology'+AND+Subject='Hydrogeology') FullText%3D%27GBA%27
+
+        console.log(`${prefix}FullText%3D'${searchTerm.replace(/ /g, "' AND FullText%3D'")}'${suffix}`);
 
         fetch(`${prefix}FullText%3D'${searchTerm.replace(/ /g, "' AND FullText%3D'")}'${suffix}`)
             .then(res => res.text())
@@ -311,23 +314,27 @@ var micka = {
                     k = k.map(a => a.replace(/[(),\/>]/g, '$').split('$')).flat().map(b => b.trim().toLowerCase());
                 }
 
+
+                //<span class="keywords1" style="cursor:pointer;" onclick="micka.fullTextSearch('${sT}');">${sT}</span>
+
+
                 let rank = 1;
                 let keywords = [];
                 for (let b of k) {
                     if (rankedTerms[0].includes(b.toLowerCase())) {
-                        keywords.push('<span class="keywords1">' + b + '</span>');
+                        keywords.push(`<span class="keywords1" onclick="micka.newSearch('${b}');">${b}</span>`);
                         rank += 10;
                     } else if (rankedTerms[1].includes(b.toLowerCase())) {
-                        keywords.push('<span class="keywords2">' + b + '</span>');
+                        keywords.push(`<span class="keywords2" onclick="micka.newSearch('${b}');">${b}</span>`);
                         rank += 3;
                     } else if (rankedTerms[2].concat(rankedTerms[3]).includes(b.toLowerCase())) {
-                        keywords.push('<span class="keywords3">' + b + '</span>');
+                        keywords.push(`<span class="keywords3" onclick="micka.newSearch('${b}');">${b}</span>`);
                         rank += 3;
                     } else if (rankedTerms[4].includes(b.toLowerCase())) {
-                        keywords.push('<span class="keywords4">' + b + '</span>');
+                        keywords.push(`<span class="keywords4" onclick="micka.newSearch('${b}');">${b}</span>`);
                         rank += 1;
                     } else {
-                        keywords.push('<span class="keywords">' + b + '</span>');
+                        keywords.push(`<span class="keywords" onclick="micka.newSearch('${b}');">${b}</span>`);
                     }
                 }
                 //console.log(k);
@@ -364,31 +371,26 @@ var micka = {
     //******************************************************************************************************
     printResults: function (results, rankedTerms, searchType) { //HTML erstellen
 
+        $('#1').html(`<strong>${searchType}</strong> search in keywords, title and abstracts texts - `);
+
         if (results.length > parseInt($('#maxResults').val(), 10)) {
-            document.getElementById('1').innerHTML += 'more than ';
+            $('#1').append('more than ');
         }
-        document.getElementById('1').innerHTML += `<strong>
-                                                    ${results.length}
-                                                </strong> results for: <span class="keywords1">
-                                                    ${rankedTerms[0].join('</span> <span class="keywords1">')}
-                                                </span><br>`;
+        $('#1').append(`<strong>${results.length}</strong> results for: <br>`);
+        $('#1').append(`<span class="keywords1">${rankedTerms[0].join('</span>, <span class="keywords1">')}</span><br>`);
+
         if (rankedTerms[1].length > 0) {
-            document.getElementById('1').innerHTML += `- related terms: <span class="keywords2">
-                                                        ${rankedTerms[1].join('</span> <span class="keywords2">')}
-                                                    </span> <br>`;
+            rankedTerms[1].forEach(a => $('#1').append(`<span class="keywords2" onclick="micka.newSearch('${a}');">${a}</span> `));
         }
         if (rankedTerms[2].concat(rankedTerms[3]).length > 0) {
-            document.getElementById('1').innerHTML += `- narrower terms: <span class="keywords3">
-                                                        ${rankedTerms[2].concat(rankedTerms[3]).join('</span> <span class="keywords3">')}
-                                                    </span> <br>`;
+            $('#1').append(`<br>- narrower terms: <br>`);
+            rankedTerms[2].concat(rankedTerms[3]).forEach(a => $('#1').append(`<span class="keywords3" onclick="micka.newSearch('${a}');">${a}</span> `));
         }
         if (rankedTerms[4].length > 0) {
-            document.getElementById('1').innerHTML += `- and broader terms: <span class="keywords4">
-                                                        ${rankedTerms[4].join('</span> <span class="keywords4">')}
-                                                    </span>
-                                                    <br>`;
+            $('#1').append(`<br>- and broader terms: <br>`);
+            rankedTerms[4].forEach(a => $('#1').append(`<span class="keywords4" onclick="micka.newSearch('${a}');">${a}</span> `));
         }
-        document.getElementById('1').innerHTML += `<strong>${searchType}</strong> search in keywords, title and abstracts texts<hr>`;
+        $('#1').append(`<hr>`);
 
         let mickaViewer = 'https://egdi.geology.cz/record/basic/'; // basic für NEUEN Micka hinzufügen
         for (let record of results) {
@@ -417,7 +419,41 @@ var micka = {
 
         document.getElementById('spinner').style.visibility = 'collapse';
 
+
+        document.getElementById('spinner').style.visibility = 'collapse';
+
     },
+
+    //******************************************************************************************************
+
+    newSearch: function (term) { //term in 99% english lang
+
+        try {
+            let uri = window.fuse.list.find(a => a.L.value === term).URIs.value;
+            micka.semanticSearch(uri, term, '');
+        } catch (e) {
+            ws_micka.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
+                            select distinct ?s ?L
+                            where {
+                            values ?p {skos:altLabel skos:prefLabel skos:hiddenLabel}
+                            ?s a skos:Concept; ?p ?o; skos:prefLabel ?L
+                            FILTER(str(?o)='${term}') FILTER(lang(?L)='${micka.USER_LANG}')
+                            }`, data => {
+
+                if (data.results.bindings.length > 0) {
+                    console.log(data.results.bindings[0].s.value);
+                    micka.semanticSearch(data.results.bindings[0].s.value, data.results.bindings[0].L.value, '');
+                } else {
+                    micka.fullTextSearch(term);
+                    $('#searchInput').val(term);
+                }
+
+            });
+        }
+        document.getElementById('spinner').style.visibility = 'visible';
+    },
+
+    //******************************************************************************************************
 
     __upperConcept: {},
     __selectSearchLink: function (up, click) {
