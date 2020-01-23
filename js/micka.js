@@ -104,9 +104,15 @@ var micka = {
                         label: autoSuggest.slice(0, 1)[0].L.value,
                         uri: autoSuggest.slice(0, 1)[0].URIs.value
                     };
+                    let langClass = '';
                     $.each(autoSuggest.slice(0, 10), function (index, value) {
+                        if (value.lang.value !== micka.USER_LANG) {
+                            langClass = 'langSub';
+                        } else {
+                            langClass = '';
+                        }
                         $('#dropdown').append(` <tr>
-                                                <td class="searchLink dropdown-item" 
+                                                <td class="searchLink dropdown-item ${langClass}"
                                                     onclick="micka.semanticSearch('${value.URIs.value}','${value.L.value}','');" data-uri="${value.URIs.value}", data-label="${value.L.value}">
                                                     ${value.L.value}
                                                 </td>
@@ -128,10 +134,12 @@ var micka = {
         }
 
         ws_micka.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
-                        SELECT (GROUP_CONCAT(?s; separator = ';') as ?URIs) ?L
+                        SELECT (GROUP_CONCAT(?s; separator = ';') as ?URIs) ?L (lang(?L)as ?lang)
                         WHERE {
                         VALUES ?p {skos:prefLabel skos:altLabel}
-                        ?s a skos:Concept; ?p ?L . FILTER(lang(?L)="${micka.USER_LANG}")
+                        ?s a skos:Concept; ?p ?Le . FILTER(lang(?Le)="en")
+                        OPTIONAL {?s ?p ?Lx FILTER(lang(?Lx)="${micka.USER_LANG}")}
+                        BIND(COALESCE(?Lx,?Le) AS ?L)
                         ${qCat}
                         }
                         GROUP BY ?L`, jsonData => {
@@ -158,7 +166,7 @@ var micka = {
                         where {
                         values ?s {<${URIs.replace(/;/g, "> <")}>}
                         values ?l {skos:altLabel skos:prefLabel skos:hiddenLabel}
-                        {?s ?l ?L filter(lang(?L)='en' || lang(?L)='de' || lang(?L)='es' || lang(?L)='fr') bind(0 as ?r)}
+                        {?s ?l ?L filter(lang(?L)='en') bind(0 as ?r)}
                         union
                         {?s skos:related ?o . ?o ?l ?L filter(lang(?L)='en') bind(1 as ?r)}
                         union
@@ -167,14 +175,17 @@ var micka = {
                         {?s skos:narrower+ ?o . ?o ?l ?L filter(lang(?L)='en') bind(3 as ?r)}
                         union
                         {?s skos:broader ?o . ?o ?l ?L filter(lang(?L)='en') bind(4 as ?r)}
-                        FILTER(!regex(str(?L), '/'))
-                        FILTER(!regex(str(?L), ','))
-                        FILTER(!regex(str(?L), ' and '))
-                        FILTER(!regex(str(?L), ' or '))
                         }
                         group by ?L
                         order by ?rank
-                        LIMIT 40`, data => {
+                        LIMIT 20`, data => {
+
+/*                      FILTER(!regex(str(?L), '/'))
+                        FILTER(!regex(str(?L), ','))
+                        FILTER(!regex(str(?L), ' and '))
+                        FILTER(!regex(str(?L), ' or ')) */
+
+
             //let allTerms = data.results.bindings.map(a => a.L.value.toLowerCase());
             let rankedTerms = [];
             //console.log(data.results.bindings);
