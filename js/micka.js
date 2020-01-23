@@ -157,6 +157,7 @@ var micka = {
     //************************perform the search for a selected term ************************************         
     semanticSearch: function (URIs, origLabel, searchInfo) {
         //console.log($('#selectAll').prop('checked'));
+        document.getElementById('spinner').style.visibility = 'visible';
 
         $('#searchInput').val(origLabel);
         // ohne select (group_concat(distinct ?c; separator = '|') as ?category)
@@ -180,10 +181,10 @@ var micka = {
                         order by ?rank
                         LIMIT 20`, data => {
 
-/*                      FILTER(!regex(str(?L), '/'))
-                        FILTER(!regex(str(?L), ','))
-                        FILTER(!regex(str(?L), ' and '))
-                        FILTER(!regex(str(?L), ' or ')) */
+            /*                      FILTER(!regex(str(?L), '/'))
+                                    FILTER(!regex(str(?L), ','))
+                                    FILTER(!regex(str(?L), ' and '))
+                                    FILTER(!regex(str(?L), ' or ')) */
 
 
             //let allTerms = data.results.bindings.map(a => a.L.value.toLowerCase());
@@ -217,7 +218,12 @@ var micka = {
         rankedTerms[0] = searchTerm.toLowerCase().split(' ');
         micka.clearPage(); //(subject='Geology'+AND+Subject='Hydrogeology') FullText%3D%27GBA%27
 
-        //console.log(`${prefix}FullText%3D'${searchTerm.replace(/ /g, "' AND FullText%3D'")}'${suffix}`);
+        console.log(`${prefix}FullText%3D'${searchTerm.replace(/ /g, "' AND FullText%3D'")}'${suffix}`);
+        fetch(`${prefix}FullText%3D'${searchTerm.replace(/ /g, "' AND FullText%3D'")}'${suffix}`)
+            .then(res => res.json())
+            .then(data => {
+                console.log(data);
+            });
 
         fetch(`${prefix}FullText%3D'${searchTerm.replace(/ /g, "' AND FullText%3D'")}'${suffix}`)
             .then(res => res.text())
@@ -368,6 +374,7 @@ var micka = {
 
                 results.push({
                     id: a.id,
+                    type: a.type,
                     title: a.title,
                     abstract: a.abstract.substring(0, 500) + ' ..',
                     keywords: keywords,
@@ -406,20 +413,38 @@ var micka = {
 
         let mickaViewer = 'https://egdi.geology.cz/record/basic/'; // basic für NEUEN Micka hinzufügen
         //let newAbstract = rankedTerms[1].concat(rankedTerms[2].concat(rankedTerms[3])
+        let typeSym = [{
+            type: 'service',
+            html: '<i class="fas fa-cog"></i>'
+        }, {
+            type: 'dataset',
+            html: '<i class="fas fa-map"></i>'
+        }];
 
         for (let record of results) {
             let newAbstract = record.abstract;
             rankedTerms.flat().forEach(x => newAbstract = newAbstract.split(x).join('<strong>' + x + '</strong>'));
+            let tS = '';
+            try {
+                tS = typeSym.find(x => x.type === record.type).html;
+            } catch (e) {
+                tS = '<i class="fas fa-table"></i>';
+            }
+
 
             document.getElementById('1').innerHTML += `
                         <div>
+                            <span class="MD_type">${tS} </span>
                             <a href="${mickaViewer + record.id}">
                                 <strong>
                                     ${record.title}
                                 </strong>
                             </a>
                             <span style="float:right">
-                                relevance: ${record.rank} pts or <strong>${record.relevance}%
+                                <div class="progress">
+                                  <div class="progress-bar" role="progressbar" style="width: ${record.relevance}%;"></div>
+                                </div>
+                                score ${record.rank}
                             </span>
                         </div>
                         <br>

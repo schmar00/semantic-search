@@ -19,6 +19,16 @@
     font-style: italic;
     color: grey;
 }
+.progress{
+    height: 7px;
+
+}
+.progress-bar{
+    background-color: limegreen;
+}
+a {
+    color: #007bff;
+}
 
 .multiselect-selected-text,
 .dropdown-toggle {
@@ -55,4 +65,8 @@
 
 .keywords4 {
     background: #B2D732;
+}
+
+.MD_type {
+    color: lightgray;
 }
