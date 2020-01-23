@@ -15,6 +15,11 @@
     cursor: pointer;
 }
 
+.langSub {
+    font-style: italic;
+    color: grey;
+}
+
 .multiselect-selected-text,
 .dropdown-toggle {
     color: white;
