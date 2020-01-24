@@ -216,14 +216,13 @@ var micka = {
         let results = [];
         let rankedTerms = [[searchTerm], [], [], [], []];
         micka.clearPage(); //(subject='Geology'+AND+Subject='Hydrogeology') FullText%3D%27GBA%27
-
-        console.log(searchTerm, combinationTerm);
+        //console.log(searchTerm, combinationTerm);
 
         if (!combinationTerm) {
             rankedTerms[0] = searchTerm.toLowerCase().split(' ');
             searchTerm = searchTerm.replace(/ /g, "' AND FullText%3D'");
         }
-        console.log(`${prefix}FullText%3D'${searchTerm}'${suffix}`);
+
         fetch(`${prefix}FullText%3D'${searchTerm}'${suffix}`)
             .then(res => res.text())
             .then(text => {
