@@ -470,6 +470,22 @@ var micka = {
 
     //******************************************************************************************************
 
+    /*PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
+                        SELECT (GROUP_CONCAT(?s; separator = ';') as ?URIs) ?L (lang(?L)as ?lang)
+                        WHERE {
+                        VALUES ?p {skos:prefLabel skos:altLabel}
+                        ?s a skos:Concept; ?p ?Le . FILTER(lang(?Le)="en")
+                        OPTIONAL {?s ?p ?Lx FILTER(lang(?Lx)="${micka.USER_LANG}")}
+                        BIND(COALESCE(?Lx,?Le) AS ?L)
+                        ${qCat}
+                        }
+                        GROUP BY ?L*/
+
+
+
+
+
+
     newSearch: function (term) {
 
         try {
@@ -481,9 +497,8 @@ var micka = {
                             where {
                             values ?p {skos:altLabel skos:prefLabel skos:hiddenLabel}
                             ?s a skos:Concept; ?p ?o; skos:prefLabel ?L
-                            FILTER(str(?o)='${term}') FILTER(lang(?L)='${micka.USER_LANG}')
+                            FILTER(str(?o)='${term}')
                             }`, data => {
-
                 if (data.results.bindings.length > 0) {
                     //console.log(data.results.bindings[0].s.value);
                     micka.semanticSearch(data.results.bindings[0].s.value, data.results.bindings[0].L.value, '');
