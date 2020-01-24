@@ -218,12 +218,12 @@ var micka = {
         rankedTerms[0] = searchTerm.toLowerCase().split(' ');
         micka.clearPage(); //(subject='Geology'+AND+Subject='Hydrogeology') FullText%3D%27GBA%27
 
-        console.log(`${prefix}FullText%3D'${searchTerm.replace(/ /g, "' AND FullText%3D'")}'${suffix}`);
-        fetch(`${prefix}FullText%3D'${searchTerm.replace(/ /g, "' AND FullText%3D'")}'${suffix}`)
-            .then(res => res.json())
-            .then(data => {
-                console.log(data);
-            });
+        /*        console.log(`${prefix}FullText%3D'${searchTerm.replace(/ /g, "' AND FullText%3D'")}'${suffix}`);
+                fetch(`${prefix}FullText%3D'${searchTerm.replace(/ /g, "' AND FullText%3D'")}'${suffix}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        console.log(data);
+                    });*/
 
         fetch(`${prefix}FullText%3D'${searchTerm.replace(/ /g, "' AND FullText%3D'")}'${suffix}`)
             .then(res => res.text())
@@ -331,10 +331,7 @@ var micka = {
                     k = k.map(a => a.replace(/[(),\/>]/g, '$').split('$')).flat().map(b => b.trim().toLowerCase());
                 }
 
-
                 //<span class="keywords1" style="cursor:pointer;" onclick="micka.fullTextSearch('${sT}');">${sT}</span>
-
-
                 let rank = 1;
                 let keywords = [];
                 for (let b of k) {
@@ -355,21 +352,30 @@ var micka = {
                     }
                 }
                 //console.log(k);
-                let titleArr = a.title.replace(/[_/,]/g, ' ').split(' ').map(a => a.toLowerCase());
-                let abstractArr = a.abstract.replace(/[_/,]/g, ' ').split(' ').map(a => a.toLowerCase());
-                //console.log(titleArr,rankedTerms[0]);
 
-                if (titleArr.some(r => rankedTerms[0].includes(r))) {
-                    rank += 10;
+                let title_str = a.title.toLowerCase();
+                let abstract_str = a.abstract.toLowerCase();
+
+                try {
+                    if (rankedTerms[0].map(x => title_str.indexOf(x)).reduce((total, num) => total + num) + rankedTerms[0].length > 0) {
+                        rank += 10;
+                    }
+                    if (rankedTerms[0].map(x => abstract_str.indexOf(x)).reduce((total, num) => total + num) + rankedTerms[0].length > 0) {
+                        rank += 3;
+                    }
+                } catch (e) {
+                    //Catch Statement
                 }
-                if (abstractArr.some(r => rankedTerms[0].includes(r))) {
-                    rank += 3;
-                }
-                if (titleArr.some(r => rankedTerms[1].concat(rankedTerms[2]).concat(rankedTerms[3]).concat(rankedTerms[4]).includes(r))) {
-                    rank += 1;
-                }
-                if (abstractArr.some(r => rankedTerms[1].concat(rankedTerms[2]).concat(rankedTerms[3]).concat(rankedTerms[4]).includes(r))) {
-                    rank += 1;
+                let rankedRest = rankedTerms[1].concat(rankedTerms[2]).concat(rankedTerms[3]).concat(rankedTerms[4]);
+                try {
+                    if (rankedRest.map(x => title_str.indexOf(x)).reduce((total, num) => total + num) + rankedRest.length > 0) {
+                        rank += 1;
+                    }
+                    if (rankedRest.map(x => abstract_str.indexOf(x)).reduce((total, num) => total + num) + rankedRest.length > 0) {
+                        rank += 1;
+                    }
+                } catch (e) {
+                    //Catch Statement
                 }
 
                 results.push({
@@ -416,10 +422,13 @@ var micka = {
         let typeSym = [{
             type: 'service',
             html: '<i class="fas fa-cog"></i>'
-        }, {
+            }, {
             type: 'dataset',
             html: '<i class="fas fa-map"></i>'
-        }];
+            }, {
+            type: 'nonGeographicDataset',
+            html: '<i class="fas fa-database"></i>'
+            }];
 
         for (let record of results) {
             let newAbstract = record.abstract;
@@ -434,7 +443,7 @@ var micka = {
 
             document.getElementById('1').innerHTML += `
                         <div>
-                            <span class="MD_type">${tS} </span>
+                            <span class="MD_type">${tS}&nbsp;</span>
                             <a href="${mickaViewer + record.id}">
                                 <strong>
                                     ${record.title}
