@@ -41,7 +41,7 @@ var micka = {
     },
 
     startSearch: function (e) {
-        let sT = $('#searchInput').val();
+        let sT = $('#searchInput').val().trim();
         //console.log(sT);
         if (sT.length !== 0) {
             if (Object.keys(micka.__upperConcept).length !== 0) {
@@ -50,17 +50,17 @@ var micka = {
                     if (sT !== micka.__upperConcept.label) {
                         searchInfo = `searched for <span class="keywords1">${micka.__upperConcept.label}</span>
                                                   <br>
-                                                  search instead for <span class="keywords1" onclick="micka.fullTextSearch('${sT}');">${sT}</span>
+                                                  search instead for <span class="keywords1" onclick="micka.fullTextSearch('${sT}', true);">${sT}</span>
                                                 <hr>`;
                     }
                     micka.semanticSearch(micka.__upperConcept.uri, micka.__upperConcept.label, searchInfo);
                 } else {
-                    micka.fullTextSearch(sT);
+                    micka.fullTextSearch(sT, false);
                 }
                 $('#dropdown').empty();
                 micka.__upperConcept = {};
             } else {
-                micka.fullTextSearch(sT);
+                micka.fullTextSearch(sT, false);
             }
         }
         document.getElementById('spinner').style.visibility = 'visible';
@@ -209,23 +209,21 @@ var micka = {
     },
 
     //******************************************************************************************************
-    fullTextSearch: function (searchTerm) {
+    fullTextSearch: function (searchTerm, combinationTerm) {
 
         let prefix = 'https://egdi.geology.cz/csw/?request=GetRecords&query=(';
         let suffix = `)&format=application/json&language=eng&MaxRecords=${parseInt($('#maxResults').val(), 10)+100}&ElementSetName=full`;
         let results = [];
-        let rankedTerms = [[], [], [], [], []];
-        rankedTerms[0] = searchTerm.toLowerCase().split(' ');
+        let rankedTerms = [[searchTerm], [], [], [], []];
         micka.clearPage(); //(subject='Geology'+AND+Subject='Hydrogeology') FullText%3D%27GBA%27
+        //console.log(searchTerm, combinationTerm);
 
-        /*        console.log(`${prefix}FullText%3D'${searchTerm.replace(/ /g, "' AND FullText%3D'")}'${suffix}`);
-                fetch(`${prefix}FullText%3D'${searchTerm.replace(/ /g, "' AND FullText%3D'")}'${suffix}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        console.log(data);
-                    });*/
+        if (!combinationTerm) {
+            rankedTerms[0] = searchTerm.toLowerCase().split(' ');
+            searchTerm = searchTerm.replace(/ /g, "' AND FullText%3D'");
+        }
 
-        fetch(`${prefix}FullText%3D'${searchTerm.replace(/ /g, "' AND FullText%3D'")}'${suffix}`)
+        fetch(`${prefix}FullText%3D'${searchTerm}'${suffix}`)
             .then(res => res.text())
             .then(text => {
                 if (text.includes('<!DOCTYPE html>')) {
@@ -331,7 +329,7 @@ var micka = {
                     k = k.map(a => a.replace(/[(),\/>]/g, '$').split('$')).flat().map(b => b.trim().toLowerCase());
                 }
 
-                //<span class="keywords1" style="cursor:pointer;" onclick="micka.fullTextSearch('${sT}');">${sT}</span>
+
                 let rank = 1;
                 let keywords = [];
                 for (let b of k) {
@@ -487,10 +485,10 @@ var micka = {
                             }`, data => {
 
                 if (data.results.bindings.length > 0) {
-                    console.log(data.results.bindings[0].s.value);
+                    //console.log(data.results.bindings[0].s.value);
                     micka.semanticSearch(data.results.bindings[0].s.value, data.results.bindings[0].L.value, '');
                 } else {
-                    micka.fullTextSearch(term);
+                    micka.fullTextSearch(term, true);
                     $('#searchInput').val(term);
                 }
 
