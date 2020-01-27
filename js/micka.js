@@ -426,6 +426,9 @@ var micka = {
             }, {
             type: 'nonGeographicDataset',
             html: '<i class="fas fa-database"></i>'
+            }, {
+            type: 'application',
+            html: '<i class="fas fa-desktop"></i>'
             }];
 
         for (let record of results) {
@@ -493,15 +496,19 @@ var micka = {
             micka.semanticSearch(uri, term, '');
         } catch (e) {
             ws_micka.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
-                            select distinct ?s ?L
+                            select ?s ?label
                             where {
                             values ?p {skos:altLabel skos:prefLabel skos:hiddenLabel}
-                            ?s a skos:Concept; ?p ?o; skos:prefLabel ?L
-                            FILTER(str(?o)='${term}')
+                            ?s a skos:Concept; ?p ?L . FILTER(str(?L)='${term}')
+                            OPTIONAL {
+                            ?s skos:prefLabel ?Lx; skos:prefLabel ?Le
+                            FILTER(lang(?Lx)='${micka.USER_LANG}') FILTER(lang(?Le)='en')
+                            }
+                            BIND(COALESCE(?Lx,?Le) AS ?label)
                             }`, data => {
                 if (data.results.bindings.length > 0) {
                     //console.log(data.results.bindings[0].s.value);
-                    micka.semanticSearch(data.results.bindings[0].s.value, data.results.bindings[0].L.value, '');
+                    micka.semanticSearch(data.results.bindings[0].s.value, data.results.bindings[0].label.value, '');
                 } else {
                     micka.fullTextSearch(term, true);
                     $('#searchInput').val(term);
