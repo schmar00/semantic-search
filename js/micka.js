@@ -492,14 +492,14 @@ var micka = {
     newSearch: function (term) {
 
         try {
-            let uri = window.fuse.list.find(a => a.L.value === term).URIs.value;
+            let uri = window.fuse.list.find(a => a.L.value.toLowerCase() === term.toLowerCase()).URIs.value;
             micka.semanticSearch(uri, term, '');
         } catch (e) {
             ws_micka.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
                             select ?s ?label
                             where {
                             values ?p {skos:altLabel skos:prefLabel skos:hiddenLabel}
-                            ?s a skos:Concept; ?p ?L . FILTER(str(?L)='${term}')
+                            ?s a skos:Concept; ?p ?L . FILTER(lcase(str(?L))='${term.toLowerCase()}')
                             OPTIONAL {
                             ?s skos:prefLabel ?Lx; skos:prefLabel ?Le
                             FILTER(lang(?Lx)='${micka.USER_LANG}') FILTER(lang(?Le)='en')
