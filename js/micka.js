@@ -499,10 +499,8 @@ var micka = {
                             where {
                             values ?p {skos:altLabel skos:prefLabel skos:hiddenLabel}
                             ?s a skos:Concept; ?p ?L . FILTER(lcase(str(?L))='${term.toLowerCase()}')
-                            OPTIONAL {
-                            ?s skos:prefLabel ?Lx; skos:prefLabel ?Le
-                            FILTER(lang(?Lx)='${micka.USER_LANG}') FILTER(lang(?Le)='en')
-                            }
+                            OPTIONAL {?s skos:prefLabel ?Lx FILTER(lang(?Lx)='${micka.USER_LANG}')}
+                            OPTIONAL {?s skos:prefLabel ?Le FILTER(lang(?Le)='en')}
                             BIND(COALESCE(?Lx,?Le) AS ?label)
                             }`, data => {
                 if (data.results.bindings.length > 0) {
