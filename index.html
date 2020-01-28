@@ -25,6 +25,7 @@
         .dropdown-menu {
             min-width: 250px !important;
         }
+
     </style>
 </head>
 
@@ -47,6 +48,7 @@
                 micka.init();
             });
         }
+
     </script>
     <!-- Page Content -->
     <div class="container">
@@ -74,9 +76,8 @@
                     </div>
                 </div>
                 <div id="spinner" style="visibility:collapse;">
-                    <div class="spinner-grow spinner-grow-sm text-primary" role="status">
-
-                    </div>
+                    <div class="spinner-grow spinner-grow-sm text-primary" role="status"></div>
+                    <span id="qCount">1</span>
                 </div>
                 <div id="pageContent" class="col-lg-12">
                     <div id="searchInfo"></div>
@@ -108,7 +109,9 @@
         </div>
         <!-- /.row -->
     </div>
-</body></html>
+</body>
+
+</html>
 
 <!--The search passes through following steps trying to find a maximum of <strong>20</strong> results:<br><br>
                                 <ol style="padding-left: 1rem;">
@@ -120,4 +123,3 @@
                                     <li>matches of keywords of broader terms</li>
                                     <li>text matches in title of broader terms</li>
                                 </ol>-->
-

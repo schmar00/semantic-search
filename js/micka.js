@@ -299,6 +299,7 @@ var micka = {
                     await fetch(prefix + fetchQ[i] + suffix)
                         .then(res => res.text())
                         .then(text => {
+                            $('#qCount').text(i + 1);
                             if (text.includes('<!DOCTYPE html>')) { //repair json+html mix
                                 text = text.split('<!DOCTYPE html>')[0] + ']}';
                             }
@@ -319,7 +320,7 @@ var micka = {
         let resIDs = results.map(a => a.id);
         for (let a of jsonData.records) {
             if (!resIDs.includes(a.id)) {
-                let k = [];
+                let k = []; //individually assigned keywords
                 if (a.keywords !== undefined) {
                     a.keywords.forEach(x => {
                         if (x.keywords !== undefined) {
@@ -332,7 +333,7 @@ var micka = {
 
                 let rank = 1;
                 let keywords = [];
-                for (let b of k) {
+                for (let b of k) { //add <span> for each keyword and rise rank (if match)
                     if (rankedTerms[0].includes(b.toLowerCase())) {
                         keywords.push(`<span class="keywords1" onclick="micka.newSearch('${b}');">${b}</span>`);
                         rank += 10;
@@ -348,32 +349,30 @@ var micka = {
                     } else {
                         keywords.push(`<span class="keywords" onclick="micka.newSearch('${b}');">${b}</span>`);
                     }
+                    //console.log(rank, keywords);
                 }
-                //console.log(k);
 
-                let title_str = a.title.toLowerCase();
-                let abstract_str = a.abstract.toLowerCase();
 
-                try {
-                    if (rankedTerms[0].map(x => title_str.indexOf(x)).reduce((total, num) => total + num) + rankedTerms[0].length > 0) {
+                let title_arr = a.title.toLowerCase().split(/[\s,-.():\/]+/).filter(n => n);
+                let abstract_arr = a.abstract.toLowerCase().split(/[\s,-.():\/]+/).filter(n => n);
+                let rankedRest = rankedTerms[1].concat(rankedTerms[2]).concat(rankedTerms[3]).concat(rankedTerms[4]);
+
+                for (let x of title_arr) {
+                    if (rankedTerms[0].includes(x)) {
                         rank += 10;
                     }
-                    if (rankedTerms[0].map(x => abstract_str.indexOf(x)).reduce((total, num) => total + num) + rankedTerms[0].length > 0) {
-                        rank += 3;
+                    if (rankedRest.includes(x)) {
+                        rank += 4;
                     }
-                } catch (e) {
-                    //Catch Statement
                 }
-                let rankedRest = rankedTerms[1].concat(rankedTerms[2]).concat(rankedTerms[3]).concat(rankedTerms[4]);
-                try {
-                    if (rankedRest.map(x => title_str.indexOf(x)).reduce((total, num) => total + num) + rankedRest.length > 0) {
+
+                for (let x of abstract_arr) {
+                    if (rankedTerms[0].includes(x)) {
+                        rank += 7;
+                    }
+                    if (rankedRest.includes(x)) {
                         rank += 1;
                     }
-                    if (rankedRest.map(x => abstract_str.indexOf(x)).reduce((total, num) => total + num) + rankedRest.length > 0) {
-                        rank += 1;
-                    }
-                } catch (e) {
-                    //Catch Statement
                 }
 
                 results.push({
