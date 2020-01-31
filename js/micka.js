@@ -4,8 +4,129 @@ var micka = {
 
     init: function () {
         micka.USER_LANG = (navigator.language || navigator.language).substring(0, 2);
+
         let suppLang = ['en', 'cs', 'da', 'el', 'de', 'es', 'et', 'fi', 'fr', 'hr', 'hu', 'is', 'it', 'lt', 'nl', 'no', 'pl', 'pt', 'ro', 'sk', 'sl', 'sv', 'uk'];
+
+        let supportedLang = [{
+                id: 'cs',
+                label: 'čeština (cs)'
+            },
+            {
+                id: 'da',
+                label: 'dansk (da)'
+            },
+            {
+                id: 'de',
+                label: 'Deutsch (de)'
+            },
+            {
+                id: 'et',
+                label: 'eesti keel (et)'
+            },
+            {
+                id: 'el',
+                label: 'ελληνικά (el)'
+            },
+            {
+                id: 'en',
+                label: 'English (en)'
+            },
+            {
+                id: 'es',
+                label: 'español (es)'
+            },
+            {
+                id: 'fr',
+                label: 'français (fr)'
+            },
+            {
+                id: 'hr',
+                label: 'hrvatski (hr)'
+            },
+            {
+                id: 'is',
+                label: 'íslenska (is)'
+            },
+            {
+                id: 'it',
+                label: 'italiano (it)'
+            },
+            {
+                id: 'lt',
+                label: 'lietuvių kalba (lt)'
+            },
+            {
+                id: 'hu',
+                label: 'magyar (hu)'
+            },
+            {
+                id: 'nl',
+                label: 'Nederlands (nl)'
+            },
+            {
+                id: 'no',
+                label: 'norsk (no)'
+            },
+            {
+                id: 'pl',
+                label: 'polski (pl)'
+            },
+            {
+                id: 'pt',
+                label: 'português (pt)'
+            },
+            {
+                id: 'ro',
+                label: 'română (ro)'
+            },
+            {
+                id: 'sk',
+                label: 'slovenčina (sk)'
+            },
+            {
+                id: 'sl',
+                label: 'slovenščina (sl)'
+            },
+            {
+                id: 'fi',
+                label: 'suomi (fi)'
+            },
+            {
+                id: 'sv',
+                label: 'svenska (sv)'
+            },
+            {
+                id: 'uk',
+                label: 'українська мова (uk)'
+            }];
+
         let cat = ['Applied Geophysics', 'Fossil Resources', 'Geochemistry', 'Geochronology-Stratigraphy', 'Geological Processes', 'Geothermal Energy', 'Hazard, Risk and Impact', 'Hydrogeology', 'Information System', 'Lithology', 'Mineral Resources', 'Modelling', 'Structural Geology', 'Subsurface Energy Storage', 'Subsurface Management'];
+
+        supportedLang.forEach(a => $('#selectLang').append(`<option value="${a.id}">${a.label}</option>`));
+
+        let urlParams = new URLSearchParams(window.location.search);
+
+        //vendors.some(e => e.Name === 'Magenic')
+
+        if (urlParams.has('lang')) {
+            micka.USER_LANG = urlParams.get('lang');
+        }
+        if (!supportedLang.some(a => a.id === micka.USER_LANG)) {
+            micka.USER_LANG = 'en';
+        }
+
+        $('#selectLang').val(micka.USER_LANG);
+
+        $('#selectLang').on('change', function (e) {
+            let optionSelected = $("option:selected", this);
+            let valueSelected = this.value;
+            if (urlParams.has('lang')) {
+                window.location = window.location.href.split('?')[0] + '?lang=' + this.value;
+            } else {
+                urlParams.append('lang', this.value);
+                window.location.search += urlParams;
+            }
+        });
 
         cat.forEach(function (c, index) {
             $('#searchCategories').append(`<option value="${index}" selected="selected">${c}</option>`);
@@ -20,16 +141,6 @@ var micka = {
             },
         });
 
-        if (!suppLang.includes(micka.USER_LANG)) {
-            micka.USER_LANG = 'en';
-        }
-
-        let urlParams = new URLSearchParams(window.location.search);
-
-        if (urlParams.has('lang')) {
-            micka.USER_LANG = urlParams.get('lang');
-        }
-
         micka.insertSearchCard('search_widget'); //inserts search widget only                
 
         if (urlParams.has('search')) {
@@ -37,15 +148,18 @@ var micka = {
 
         }
         micka.initSearch(selectedCategories); //provides js for fuse search
-        document.getElementById('lang').innerHTML = '[' + micka.USER_LANG + ']';
+
     },
 
     startSearch: function (e) {
         let sT = $('#searchInput').val().trim();
         //console.log(sT);
         if (sT.length !== 0) {
-            if (Object.keys(micka.__upperConcept).length !== 0) {
-                if (similarity(sT, micka.__upperConcept.label) > 0.7) {
+            if (sT.includes('"')) {
+                micka.fullTextSearch(sT.split('\"')[1], true);
+                $('#dropdown').hide();
+            } else if (Object.keys(micka.__upperConcept).length !== 0) {
+                if (similarity(sT, micka.__upperConcept.label) > 0.7) { //degree of similarity 70%
                     let searchInfo = '';
                     if (sT !== micka.__upperConcept.label) {
                         searchInfo = `searched for <span class="keywords1">${micka.__upperConcept.label}</span>
@@ -311,6 +425,7 @@ var micka = {
             }
             //console.log(results);
             micka.printResults(results.sort((a, b) => b.rank - a.rank), rankedTerms, 'semantic');
+            $('#qCount').text('');
         })();
     },
 

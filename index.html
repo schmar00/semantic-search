@@ -25,7 +25,6 @@
         .dropdown-menu {
             min-width: 250px !important;
         }
-
     </style>
 </head>
 
@@ -48,7 +47,6 @@
                 micka.init();
             });
         }
-
     </script>
     <!-- Page Content -->
     <div class="container">
@@ -56,11 +54,14 @@
             <div class="col-lg-8">
                 <!-- Search Widget -->
                 <div id="search_widget" class="card my-4 text-white bg-info mb-3">
-                    <h5 class="card-header">Semantic keyword search in EGDI metadata catalog - in <span id="lang"></span></h5>
-                    <div id="searchCard" class="card-body">
+                    <h5 class="card-header">
+                        <strong>EGDI Metadata</strong>
+                        <select id="selectLang" class="custom-select text-white bg-info" style="max-width: 150px; float: right; font-size: 70%;"></select>
+                    </h5>
+                    <div id="searchCard" class="card-body" style="margin-top: -10px;">
                         <div class="text-white">
-                            <strong>Search Categories</strong>
-                            <select id="searchCategories" multiple="multiple" class=""></select>
+                            <span><strong>Search Categories</strong>
+                                <select id="searchCategories" multiple="multiple" class=""></select></span>
                             <span style="float: right;">
                                 results&nbsp;&nbsp;&nbsp;<input id="maxResults" type="text" value="50" class="text-white bg-info" style="max-width: 40px; text-align: center; border-width: 0px;">
                             </span>
@@ -97,8 +98,13 @@
                             <small>
                                 This example is built to search the <a href="https://egdi.geology.cz/?ak=search">EGDI (Micka) CSW catalogue web service</a>. For the search logic is used the <strong>new GeoERA Keyword Thesaurus</strong> hosted at the Geological Survey of Austria (<a href="http://resource.geolba.ac.at/PoolParty/sparql/geoera_keyword">Sparql endpoint</a>).
                                 <hr />
-                                To perform a <strong>semantic search</strong> via keywords <br>- <strong>select a keyword</strong> promoted in the dropdown list <strong>or press Enter</strong> to select the upper most.<strong><br>Relevance criteria</strong> for sorting the results list are calculated as follows:<br><br>
-                                10 pts for the search term as keyword / 3 pts each for narrower or related keyword matches / 1 pt for each broader match / 3 pts for the search term in title / 2 pts for each occurence of the search term in abstract / and finally 1 pt for partly text matches in keywords. The total sum of points is cut by 12 pts and converted to percents.
+                                <strong>Relevance</strong> (score) for sorting the results list is calculated as follows:<br>
+                                1 pt for each "any text" matching<br>
+                                10 pts for the search term found in keyword-metadata / 3 pts for each of the narrower or related terms / 1 pt for each of broader terms<br>
+                                <strong>additionally:</strong><br>
+                                10 pts for the search term in title / 7 pts in abstract
+                                4 pts for any related terms in title / 1 pt in abstract
+                                A total sum of points more than 12 pts is seen as a 100% matching result.<br>
                                 <hr />
                                 Note:<br>Keywords are searched against catalogue texts in English language. But the language of the keywords offered to search is <strong>choosen by the browser language</strong>. About 30% terms are available in 23 non-english languages.
                             </small>
@@ -109,9 +115,7 @@
         </div>
         <!-- /.row -->
     </div>
-</body>
-
-</html>
+</body></html>
 
 <!--The search passes through following steps trying to find a maximum of <strong>20</strong> results:<br><br>
                                 <ol style="padding-left: 1rem;">
