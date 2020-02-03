@@ -250,10 +250,11 @@ var micka = {
         ws_micka.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
                         SELECT (GROUP_CONCAT(?s; separator = ';') as ?URIs) ?L (lang(?L)as ?lang)
                         WHERE {
-                        VALUES ?p {skos:prefLabel skos:altLabel}
-                        ?s a skos:Concept; ?p ?Le . FILTER(lang(?Le)="en")
-                        OPTIONAL {?s ?p ?Lx FILTER(lang(?Lx)="${micka.USER_LANG}")}
+                        {?s skos:prefLabel ?Le . FILTER(lang(?Le)="en")
+                        OPTIONAL {?s skos:prefLabel ?Lx FILTER(lang(?Lx)="${micka.USER_LANG}")}
                         BIND(COALESCE(?Lx,?Le) AS ?L)
+                        } UNION {
+                        ?s skos:altLabel ?L . FILTER(lang(?L)="${micka.USER_LANG}")}
                         ${qCat}
                         }
                         GROUP BY ?L`, jsonData => {
