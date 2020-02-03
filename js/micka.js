@@ -154,9 +154,13 @@ var micka = {
     startSearch: function (e) {
         let sT = $('#searchInput').val().trim();
         //console.log(sT);
+        let quot = ['\"', String.fromCharCode(8222), String.fromCharCode(8220)];
         if (sT.length !== 0) {
-            if (sT.includes('"')) {
-                micka.fullTextSearch(sT.split('\"')[1], true);
+            if (quot.some(a => sT.includes(a))) {
+                for (let s of quot) {
+                    sT = sT.replace(new RegExp(s, 'g'), '$');
+                }
+                micka.fullTextSearch(sT.split('$')[1], true);
                 $('#dropdown').hide();
             } else if (Object.keys(micka.__upperConcept).length !== 0) {
                 if (similarity(sT, micka.__upperConcept.label) > 0.7) { //degree of similarity 70%
