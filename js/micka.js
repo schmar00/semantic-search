@@ -5,99 +5,123 @@ var micka = {
     init: function () {
         micka.USER_LANG = (navigator.language || navigator.language).substring(0, 2);
 
+
         let suppLang = ['en', 'cs', 'da', 'el', 'de', 'es', 'et', 'fi', 'fr', 'hr', 'hu', 'is', 'it', 'lt', 'nl', 'no', 'pl', 'pt', 'ro', 'sk', 'sl', 'sv', 'uk'];
 
         let supportedLang = [{
                 id: 'cs',
-                label: 'čeština (cs)'
+                label: 'čeština (cs)',
+                bbox: [12.655487, 48.580699, 18.620312, 50.902585]
             },
             {
                 id: 'da',
-                label: 'dansk (da)'
+                label: 'dansk (da)',
+                bbox: [7.964266, 54.723408, 12.742716, 57.768632]
             },
             {
                 id: 'de',
-                label: 'Deutsch (de)'
+                label: 'Deutsch (de)',
+                bbox: [9.634434, 46.482342, 16.741693, 48.879162]
             },
             {
                 id: 'et',
-                label: 'eesti keel (et)'
+                label: 'eesti keel (et)',
+                bbox: [21.949967, 57.826302, 28.255325, 59.500629]
             },
             {
                 id: 'el',
-                label: 'ελληνικά (el)'
+                label: 'ελληνικά (el)',
+                bbox: [19.683381, 34.625418, 26.713745, 41.602632]
             },
             {
                 id: 'en',
-                label: 'English (en)'
+                label: 'English (en)',
+                bbox: [-5.912231, 50.872174, 1.469652, 57.926290]
             },
             {
                 id: 'es',
-                label: 'español (es)'
+                label: 'español (es)',
+                bbox: [-7.296555, 36.752902, 2.106557, 43.356230]
             },
             {
                 id: 'fr',
-                label: 'français (fr)'
+                label: 'français (fr)',
+                bbox: [-2.726052, 42.888578, 7.226308, 51.027395]
             },
             {
                 id: 'hr',
-                label: 'hrvatski (hr)'
+                label: 'hrvatski (hr)',
+                bbox: [13.743253, 43.753780, 18.950116, 46.133655]
             },
             {
                 id: 'is',
-                label: 'íslenska (is)'
+                label: 'íslenska (is)',
+                bbox: [-25.051879, 63.291647, -12.353283, 66.460631]
             },
             {
                 id: 'it',
-                label: 'italiano (it)'
+                label: 'italiano (it)',
+                bbox: [6.192403, 37.399851, 17.265226, 46.375837]
             },
             {
                 id: 'lt',
-                label: 'lietuvių kalba (lt)'
+                label: 'lietuvių kalba (lt)',
+                bbox: [21.025778, 54.032129, 26.320521, 56.340364]
             },
             {
                 id: 'hu',
-                label: 'magyar (hu)'
+                label: 'magyar (hu)',
+                bbox: [16.741708, 46.056138, 22.365999, 48.296861]
             },
             {
                 id: 'nl',
-                label: 'Nederlands (nl)'
+                label: 'Nederlands (nl)',
+                bbox: [3.557671, 51.287962, 7.094823, 53.474393]
             },
             {
                 id: 'no',
-                label: 'norsk (no)'
+                label: 'norsk (no)',
+                bbox: [4.523826, 57.816191, 12.960263, 65.107481]
             },
             {
                 id: 'pl',
-                label: 'polski (pl)'
+                label: 'polski (pl)',
+                bbox: [14.673377, 50.174214, 23.241634, 54.494670]
             },
             {
                 id: 'pt',
-                label: 'português (pt)'
+                label: 'português (pt)',
+                bbox: [-10.197181, 37.034478, -6.681999, 41.917443]
             },
             {
                 id: 'ro',
-                label: 'română (ro)'
+                label: 'română (ro)',
+                bbox: [20.850373, 43.721046, 28.737563, 48.048018]
             },
             {
                 id: 'sk',
-                label: 'slovenčina (sk)'
+                label: 'slovenčina (sk)',
+                bbox: [16.983211, 47.900214, 22.255984, 49.595740]
             },
             {
                 id: 'sl',
-                label: 'slovenščina (sl)'
+                label: 'slovenščina (sl)',
+                bbox: [13.567400, 45.428324, 16.346591, 46.754455]
             },
             {
                 id: 'fi',
-                label: 'suomi (fi)'
+                label: 'suomi (fi)',
+                bbox: [21.201875, 59.907597, 31.242114, 67.474803]
             },
             {
                 id: 'sv',
-                label: 'svenska (sv)'
+                label: 'svenska (sv)',
+                bbox: [11.246357, 56.189159, 20.297951, 65.089496]
             },
             {
                 id: 'uk',
-                label: 'українська мова (uk)'
+                label: 'українська мова (uk)',
+                bbox: [23.289659, 45.163569, 39.898895, 52.200733]
             }];
 
         let cat = ['Applied Geophysics', 'Fossil Resources', 'Geochemistry', 'Geochronology-Stratigraphy', 'Geological Processes', 'Geothermal Energy', 'Hazard, Risk and Impact', 'Hydrogeology', 'Information System', 'Lithology', 'Mineral Resources', 'Modelling', 'Structural Geology', 'Subsurface Energy Storage', 'Subsurface Management'];
@@ -114,6 +138,8 @@ var micka = {
         if (!supportedLang.some(a => a.id === micka.USER_LANG)) {
             micka.USER_LANG = 'en';
         }
+
+        micka.BBOX = supportedLang.find(x => x.id === micka.USER_LANG).bbox;
 
         $('#selectLang').val(micka.USER_LANG);
 
@@ -494,10 +520,21 @@ var micka = {
                         rank += 1;
                     }
                 }
+                let home = false;
+
+                if (a.bbox !== undefined) {
+                    //bbox = left,bottom,right,top
+                    if (a.bbox[0] < micka.BBOX[2] && a.bbox[2] > micka.BBOX[0] && a.bbox[3] > micka.BBOX[1] && a.bbox[1] < micka.BBOX[3]) {
+                        rank += 1;
+                        home = true;
+                        //console.log(a.bbox, micka.BBOX, 'inside');
+                    }
+                }
 
                 results.push({
                     id: a.id,
                     type: a.type,
+                    home: home,
                     title: a.title,
                     abstract: a.abstract.substring(0, 500) + ' ..',
                     keywords: keywords,
@@ -558,6 +595,9 @@ var micka = {
                 tS = typeSym.find(x => x.type === record.type).html;
             } catch (e) {
                 tS = '<i class="fas fa-table"></i>';
+            }
+            if (record.home) {
+                tS = tS.replace('class', 'style="color: #007BFF;" class');
             }
 
 
