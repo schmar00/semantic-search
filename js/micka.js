@@ -36,7 +36,7 @@ var micka = {
             {
                 id: 'en',
                 label: 'English (en)',
-                bbox: [-5.912231, 50.872174, 1.469652, 57.926290]
+                bbox: [-10.372616,50.565817,1.535063,58.711100]
             },
             {
                 id: 'es',
@@ -376,6 +376,8 @@ var micka = {
                 }
                 results = micka.addResults(results, JSON.parse(text), rankedTerms);
                 micka.printResults(results.sort((a, b) => b.rank - a.rank), [rankedTerms[0], [], [], [], []], 'full text (exact matches)');
+                //console.log(`${prefix}FullText%3D'${searchTerm}'${suffix}`, text);
+
             });
 
     },
@@ -449,8 +451,8 @@ var micka = {
                                 text = text.split('<!DOCTYPE html>')[0] + ']}';
                             }
                             results = micka.addResults(results, JSON.parse(text), rankedTerms);
+                            //console.log('run',i, prefix + fetchQ[i] + suffix, text);
                         });
-                    //console.log(i, results);
                 }
 
             }
@@ -463,6 +465,12 @@ var micka = {
     //******************************************************************************************************
     addResults: function (results, jsonData, rankedTerms) { //rank, relevance ausrechnen
         //console.log(jsonData.records);
+        let rankedRest = rankedTerms[1].concat(rankedTerms[2]).concat(rankedTerms[3]).concat(rankedTerms[4]);
+        let rR_single = rankedRest.filter(a => a.split(' ').length === 1);
+        let r_single = rankedTerms[0].filter(a => a.split(' ').length === 1);
+        let rR_combi = rankedRest.filter(a => a.split(' ').length > 1);
+        let r_combi = rankedTerms[0].filter(a => a.split(' ').length > 1);
+
         let resIDs = results.map(a => a.id);
         for (let a of jsonData.records) {
             if (!resIDs.includes(a.id)) {
@@ -498,28 +506,44 @@ var micka = {
                     //console.log(rank, keywords);
                 }
 
-
                 let title_arr = a.title.toLowerCase().split(/[\s,-.():\/]+/).filter(n => n);
                 let abstract_arr = a.abstract.toLowerCase().split(/[\s,-.():\/]+/).filter(n => n);
-                let rankedRest = rankedTerms[1].concat(rankedTerms[2]).concat(rankedTerms[3]).concat(rankedTerms[4]);
 
                 for (let x of title_arr) {
-                    if (rankedTerms[0].includes(x)) {
+                    if (r_single.includes(x)) {
                         rank += 10;
                     }
-                    if (rankedRest.includes(x)) {
+                    if (rR_single.includes(x)) {
                         rank += 4;
                     }
                 }
 
                 for (let x of abstract_arr) {
-                    if (rankedTerms[0].includes(x)) {
+                    if (r_single.includes(x)) {
                         rank += 7;
                     }
-                    if (rankedRest.includes(x)) {
+                    if (rR_single.includes(x)) {
                         rank += 1;
                     }
                 }
+
+                for (let x of r_combi) {
+                    if (a.title.toLowerCase().includes(x)) {
+                        rank += 10;
+                    }
+                    if (a.abstract.toLowerCase().includes(x)) {
+                        rank += 7;
+                    }
+                }
+                for (let x of rR_combi) {
+                    if (a.title.toLowerCase().includes(x)) {
+                        rank += 4;
+                    }
+                    if (a.abstract.toLowerCase().includes(x)) {
+                        rank += 1;
+                    }
+                }
+
                 let home = false;
 
                 if (a.bbox !== undefined) {
