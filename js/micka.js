@@ -36,7 +36,7 @@ var micka = {
             {
                 id: 'en',
                 label: 'English (en)',
-                bbox: [-10.372616,50.565817,1.535063,58.711100]
+                bbox: [-10.372616, 50.565817, 1.535063, 58.711100]
             },
             {
                 id: 'es',
@@ -376,7 +376,7 @@ var micka = {
                 }
                 results = micka.addResults(results, JSON.parse(text), rankedTerms);
                 micka.printResults(results.sort((a, b) => b.rank - a.rank), [rankedTerms[0], [], [], [], []], 'full text (exact matches)');
-                //console.log(`${prefix}FullText%3D'${searchTerm}'${suffix}`, text);
+                console.log(`${prefix}FullText%3D'${searchTerm}'${suffix}`, text);
 
             });
 
@@ -472,18 +472,50 @@ var micka = {
         let r_combi = rankedTerms[0].filter(a => a.split(' ').length > 1);
 
         let resIDs = results.map(a => a.id);
-        for (let a of jsonData.records) {
-            if (!resIDs.includes(a.id)) {
-                let k = []; //individually assigned keywords
-                if (a.keywords !== undefined) {
-                    a.keywords.forEach(x => {
-                        if (x.keywords !== undefined) {
-                            k = k.concat(x.keywords.filter(Boolean))
-                        }
-                    });
-                    k = k.map(a => a.replace(/[(),\/>]/g, '$').split('$')).flat().map(b => b.trim().toLowerCase());
-                }
 
+        for (let a of jsonData.records) {
+            if (!resIDs.includes(a.MD_Metadata.fileIdentifier.CharacterString)) {
+                let k = []; //individually assigned keywords
+                try {
+                    if (a.MD_Metadata.identificationInfo.MD_DataIdentification.descriptiveKeywords !== undefined) {
+
+                        if (Array.isArray(a.MD_Metadata.identificationInfo.MD_DataIdentification.descriptiveKeywords)) {
+
+                            for (let s of a.MD_Metadata.identificationInfo.MD_DataIdentification.descriptiveKeywords) {
+                                let b = s.MD_Keywords.keyword;
+                                if (Array.isArray(s.MD_Keywords.keyword)) {
+                                    k = k.concat(b.map(c => c.CharacterString));
+                                } else {
+                                    try {
+                                        k.push(b.Anchor.text);
+                                    } catch (e) {
+                                        try {
+                                            k.push(b.CharacterString);
+                                        } catch (e) {
+                                            //Catch Statement
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            try {
+                                for (let s of a.MD_Metadata.identificationInfo.MD_DataIdentification.descriptiveKeywords.MD_Keywords.keyword) {
+                                    try {
+                                        k.push(b.CharacterString);
+                                    } catch (e) {}
+                                }
+                            } catch (e) {
+                                //Catch Statement
+                            }
+                        }
+                        //console.log(k.filter(x => x !== undefined));
+
+                        k = k.filter(x => x !== undefined).map(a => a.replace(/[(),\/>]/g, '$').split('$')).flat().map(b => b.trim().toLowerCase());
+                    }
+                } catch (e) {
+                    //Catch Statement
+                }
+                //console.log(k);
 
                 let rank = 1;
                 let keywords = [];
@@ -506,8 +538,26 @@ var micka = {
                     //console.log(rank, keywords);
                 }
 
-                let title_arr = a.title.toLowerCase().split(/[\s,-.():\/]+/).filter(n => n);
-                let abstract_arr = a.abstract.toLowerCase().split(/[\s,-.():\/]+/).filter(n => n);
+                let tit = '?title';
+
+                    try {
+                        tit = a.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.title.CharacterString;
+                    } catch (e) {
+                        //Catch Statement
+                    }
+
+                let abstr = '?abstract';
+
+                    try {
+                        abstr = a.MD_Metadata.identificationInfo.MD_DataIdentification.abstract.CharacterString;
+                    } catch (e) {
+                        //Catch Statement
+                    }
+
+
+
+                let title_arr = tit.toLowerCase().split(/[\s,-.():\/]+/).filter(n => n);
+                let abstract_arr = abstr.toLowerCase().split(/[\s,-.():\/]+/).filter(n => n);
 
                 for (let x of title_arr) {
                     if (r_single.includes(x)) {
@@ -528,18 +578,18 @@ var micka = {
                 }
 
                 for (let x of r_combi) {
-                    if (a.title.toLowerCase().includes(x)) {
+                    if (tit.toLowerCase().includes(x)) {
                         rank += 10;
                     }
-                    if (a.abstract.toLowerCase().includes(x)) {
+                    if (abstr.toLowerCase().includes(x)) {
                         rank += 7;
                     }
                 }
                 for (let x of rR_combi) {
-                    if (a.title.toLowerCase().includes(x)) {
+                    if (tit.toLowerCase().includes(x)) {
                         rank += 4;
                     }
-                    if (a.abstract.toLowerCase().includes(x)) {
+                    if (abstr.toLowerCase().includes(x)) {
                         rank += 1;
                     }
                 }
@@ -554,19 +604,21 @@ var micka = {
                         //console.log(a.bbox, micka.BBOX, 'inside');
                     }
                 }
+                //console.log(a.MD_Metadata.hierarchyLevel.MD_ScopeCode.codeListValue);
 
                 results.push({
-                    id: a.id,
-                    type: a.type,
+                    id: a.MD_Metadata.fileIdentifier.CharacterString,
+                    type: a.MD_Metadata.hierarchyLevel.MD_ScopeCode.codeListValue,
                     home: home,
-                    title: a.title,
-                    abstract: a.abstract.substring(0, 500) + ' ..',
+                    title: tit,
+                    abstract: abstr.substring(0, 500) + ' ..',
                     keywords: keywords,
                     rank: rank,
                     relevance: ((rank / 12 * 100).toFixed(0) > 100) ? 100 : (rank / 12 * 100).toFixed(0)
                 });
             }
         }
+
         return results
     },
 
