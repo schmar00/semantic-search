@@ -376,7 +376,7 @@ var micka = {
                 }
                 results = micka.addResults(results, JSON.parse(text), rankedTerms);
                 micka.printResults(results.sort((a, b) => b.rank - a.rank), [rankedTerms[0], [], [], [], []], 'full text (exact matches)');
-                console.log(`${prefix}FullText%3D'${searchTerm}'${suffix}`, text);
+                //console.log(`${prefix}FullText%3D'${searchTerm}'${suffix}`, text);
 
             });
 
@@ -464,7 +464,7 @@ var micka = {
 
     //******************************************************************************************************
     addResults: function (results, jsonData, rankedTerms) { //rank, relevance ausrechnen
-        //console.log(jsonData.records);
+        console.log(jsonData.records);
         let rankedRest = rankedTerms[1].concat(rankedTerms[2]).concat(rankedTerms[3]).concat(rankedTerms[4]);
         let rR_single = rankedRest.filter(a => a.split(' ').length === 1);
         let r_single = rankedTerms[0].filter(a => a.split(' ').length === 1);
@@ -540,20 +540,29 @@ var micka = {
 
                 let tit = '?title';
 
-                    try {
-                        tit = a.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.title.CharacterString;
-                    } catch (e) {
-                        //Catch Statement
-                    }
+                try {
+                    tit = a.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.title.CharacterString;
+                } catch (e) {
+                    //Catch Statement  SV_ServiceIdentification
+                }
+                try {
+                    tit = a.MD_Metadata.identificationInfo.SV_ServiceIdentification.citation.CI_Citation.title.CharacterString;
+                } catch (e) {
+                    //Catch Statement  SV_ServiceIdentification
+                }
 
                 let abstr = '?abstract';
 
-                    try {
-                        abstr = a.MD_Metadata.identificationInfo.MD_DataIdentification.abstract.CharacterString;
-                    } catch (e) {
-                        //Catch Statement
-                    }
-
+                try {
+                    abstr = a.MD_Metadata.identificationInfo.MD_DataIdentification.abstract.CharacterString;
+                } catch (e) {
+                    //Catch Statement
+                }
+                try {
+                    abstr = a.MD_Metadata.identificationInfo.SV_ServiceIdentification.abstract.CharacterString;
+                } catch (e) {
+                    //Catch Statement
+                }
 
 
                 let title_arr = tit.toLowerCase().split(/[\s,-.():\/]+/).filter(n => n);
@@ -596,14 +605,31 @@ var micka = {
 
                 let home = false;
 
-                if (a.bbox !== undefined) {
-                    //bbox = left,bottom,right,top
-                    if (a.bbox[0] < micka.BBOX[2] && a.bbox[2] > micka.BBOX[0] && a.bbox[3] > micka.BBOX[1] && a.bbox[1] < micka.BBOX[3]) {
-                        rank += 1;
-                        home = true;
-                        //console.log(a.bbox, micka.BBOX, 'inside');
-                    }
+                let bbox = {};
+                try {
+                    bbox = a.MD_Metadata.identificationInfo.MD_DataIdentification.extent.EX_Extent.geographicElement[0].EX_GeographicBoundingBox; console.log(bbox);
+                } catch (e) {
+                    //Catch Statement
                 }
+                try {
+                    bbox = a.MD_Metadata.identificationInfo.SV_ServiceIdentification.extent.EX_Extent.geographicElement[0].EX_GeographicBoundingBox; console.log(bbox);
+                } catch (e) {
+                    //Catch Statement
+                }
+
+                try {
+                    if (parseFloat(bbox.westBoundLongitude.Decimal) < micka.BBOX[2] && parseFloat(bbox.eastBoundLongitude.Decimal) > micka.BBOX[0] && parseFloat(bbox.northBoundLatitude.Decimal) > micka.BBOX[1] && parseFloat(bbox.southBoundLatitude.Decimal) < micka.BBOX[3]) {
+                        rank += 2;
+                        home = true;
+                        //console.log(bbox, micka.BBOX, 'inside');
+                    }
+                } catch (e) {
+
+                }
+
+
+                //bbox = left,bottom,right,top
+
                 //console.log(a.MD_Metadata.hierarchyLevel.MD_ScopeCode.codeListValue);
 
                 results.push({
