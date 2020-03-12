@@ -474,41 +474,14 @@ var micka = {
         let resIDs = results.map(a => a.id);
 
         for (let a of jsonData.records) {
-            if (!resIDs.includes(a.MD_Metadata.fileIdentifier.CharacterString)) {
+            if (!resIDs.includes(a.id)) {
                 let k = []; //individually assigned keywords
                 try {
-                    if (a.MD_Metadata.identificationInfo.MD_DataIdentification.descriptiveKeywords !== undefined) {
+                    if (a.keywords !== undefined) {
 
-                        if (Array.isArray(a.MD_Metadata.identificationInfo.MD_DataIdentification.descriptiveKeywords)) {
-
-                            for (let s of a.MD_Metadata.identificationInfo.MD_DataIdentification.descriptiveKeywords) {
-                                let b = s.MD_Keywords.keyword;
-                                if (Array.isArray(s.MD_Keywords.keyword)) {
-                                    k = k.concat(b.map(c => c.CharacterString));
-                                } else {
-                                    try {
-                                        k.push(b.Anchor.text);
-                                    } catch (e) {
-                                        try {
-                                            k.push(b.CharacterString);
-                                        } catch (e) {
-                                            //Catch Statement
-                                        }
-                                    }
-                                }
+                            for (let s of a.keywords) {
+                                    k = k.concat(s.keywords);//.filter(item => item));
                             }
-                        } else {
-                            try {
-                                for (let s of a.MD_Metadata.identificationInfo.MD_DataIdentification.descriptiveKeywords.MD_Keywords.keyword) {
-                                    try {
-                                        k.push(b.CharacterString);
-                                    } catch (e) {}
-                                }
-                            } catch (e) {
-                                //Catch Statement
-                            }
-                        }
-                        //console.log(k.filter(x => x !== undefined));
 
                         k = k.filter(x => x !== undefined).map(a => a.replace(/[(),\/>]/g, '$').split('$')).flat().map(b => b.trim().toLowerCase());
                     }
@@ -541,12 +514,7 @@ var micka = {
                 let tit = '?title';
 
                 try {
-                    tit = a.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.title.CharacterString;
-                } catch (e) {
-                    //Catch Statement  SV_ServiceIdentification
-                }
-                try {
-                    tit = a.MD_Metadata.identificationInfo.SV_ServiceIdentification.citation.CI_Citation.title.CharacterString;
+                    tit = a.title;
                 } catch (e) {
                     //Catch Statement  SV_ServiceIdentification
                 }
@@ -554,12 +522,7 @@ var micka = {
                 let abstr = '?abstract';
 
                 try {
-                    abstr = a.MD_Metadata.identificationInfo.MD_DataIdentification.abstract.CharacterString;
-                } catch (e) {
-                    //Catch Statement
-                }
-                try {
-                    abstr = a.MD_Metadata.identificationInfo.SV_ServiceIdentification.abstract.CharacterString;
+                    abstr = a.abstract;
                 } catch (e) {
                     //Catch Statement
                 }
@@ -605,36 +568,20 @@ var micka = {
 
                 let home = false;
 
-                let bbox = {};
-                try {
-                    bbox = a.MD_Metadata.identificationInfo.MD_DataIdentification.extent.EX_Extent.geographicElement[0].EX_GeographicBoundingBox; console.log(bbox);
-                } catch (e) {
-                    //Catch Statement
-                }
-                try {
-                    bbox = a.MD_Metadata.identificationInfo.SV_ServiceIdentification.extent.EX_Extent.geographicElement[0].EX_GeographicBoundingBox; console.log(bbox);
-                } catch (e) {
-                    //Catch Statement
-                }
-
-                try {
-                    if (parseFloat(bbox.westBoundLongitude.Decimal) < micka.BBOX[2] && parseFloat(bbox.eastBoundLongitude.Decimal) > micka.BBOX[0] && parseFloat(bbox.northBoundLatitude.Decimal) > micka.BBOX[1] && parseFloat(bbox.southBoundLatitude.Decimal) < micka.BBOX[3]) {
-                        rank += 2;
+                if (a.bbox !== undefined) {
+                    //bbox = left,bottom,right,top
+                    if (a.bbox[0] < micka.BBOX[2] && a.bbox[2] > micka.BBOX[0] && a.bbox[3] > micka.BBOX[1] && a.bbox[1] < micka.BBOX[3]) {
+                        rank += 1;
                         home = true;
-                        //console.log(bbox, micka.BBOX, 'inside');
+                        //console.log(a.bbox, central.BBOX, 'inside');
                     }
-                } catch (e) {
-
                 }
-
 
                 //bbox = left,bottom,right,top
 
-                //console.log(a.MD_Metadata.hierarchyLevel.MD_ScopeCode.codeListValue);
-
                 results.push({
-                    id: a.MD_Metadata.fileIdentifier.CharacterString,
-                    type: a.MD_Metadata.hierarchyLevel.MD_ScopeCode.codeListValue,
+                    id: a.id,
+                    type: a.type,
                     home: home,
                     title: tit,
                     abstract: abstr.substring(0, 500) + ' ..',

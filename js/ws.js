@@ -1,7 +1,7 @@
 ﻿// webservices
 "use strict";
 var ws_micka = {
-    endpoint: 'https://resource.geolba.ac.at/PoolParty/sparql/geoera_keyword',
+    endpoint: 'https://resource.geolba.ac.at/PoolParty/sparql/keyword',
 
     json2: function (query, thenFunc) {
         return fetch(this.endpoint + '?query=' + encodeURIComponent(query) + '&format=application/json')

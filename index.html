@@ -98,15 +98,19 @@
                                 This example is built to search the <a href="https://egdi.geology.cz/?ak=search">EGDI (Micka) CSW catalogue web service</a>. For the search logic is used the <strong>new GeoERA Keyword Thesaurus</strong> hosted at the Geological Survey of Austria (<a href="http://resource.geolba.ac.at/PoolParty/sparql/geoera_keyword">Sparql endpoint</a>).
                                 <hr />
                                 <strong>Relevance</strong> (score) for sorting the results list is calculated as follows:<br>
-                                1 pt for each "any text" matching<br>
-                                10 pts for the search term found in keyword-metadata / 3 pts for each of the narrower or related terms / 1 pt for each of broader terms<br>
-                                <strong>additionally:</strong><br>
-                                10 pts for the search term in title / 7 pts in abstract<br>
-                                4 pts for any related terms in title / 1 pt in abstract<br>
-                                1 pt for bbox fitting to language selected<br>
+                                <ul>
+                                    <li>1 pt for each "any text" matching</li>
+                                    <li>10 pts for the search term found in keyword-metadata / 3 pts for each of the narrower or related terms / 1 pt for each of broader terms</li>
+                                </ul>
+                                <strong>additionally:</strong>
+                                <ul>
+                                    <li>10 pts for the search term in title / 7 pts in abstract</li>
+                                    <li>4 pts for any related terms in title / 1 pt in abstract</li>
+                                    <li>1 pt for bbox fitting to language selected</li>
+                                </ul>
                                 A total sum of points more than 12 pts is seen as a 100% matching result.<br>
-                                <hr />
-                                Note:<br>Keywords are searched against catalogue texts in English language. But the language of the keywords offered to search is <strong>choosen by the browser language</strong>. About 30% terms are available in 23 non-english languages.
+                                <hr>
+                                Note:<br>Keywords are searched against catalogue texts in English language. But the language of the keywords offered to search is <strong>choosen by the browser language</strong>. About 30% terms are available in 22 non-english languages.
                             </small>
                         </p>
                     </div>
