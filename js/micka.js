@@ -466,6 +466,56 @@ var micka = {
     },
 
     //******************************************************************************************************
+    getKeywords: function (kw1) {
+        let kw = [];
+        if (Array.isArray(kw1)) {
+            for (let kw2 of kw1) {
+                if (Array.isArray(kw2.MD_Keywords.keyword)) {
+                    for (let kw3 of kw2.MD_Keywords.keyword) {
+                        try {
+                            kw.push(kw3.CharacterString);
+                        } catch (e) {
+                            //Catch Statement
+                        }
+                        try {
+                            kw.push(kw3.Anchor.text);
+                        } catch (e) {
+                            //Catch Statement
+                        }
+                    }
+                } else {
+                    try {
+                        kw.push(kw2.MD_Keywords.keyword.CharacterString);
+                    } catch (e) {
+                        //Catch Statement
+                    }
+                    try {
+                        kw.push(kw2.MD_Keywords.keyword.Anchor.text);
+                    } catch (e) {
+                        //Catch Statement
+                    }
+                }
+            }
+        } else if (Array.isArray(kw1.MD_Keywords.keyword)) {
+            for (let kw2 of kw1.MD_Keywords.keyword) {
+                try {
+                    kw.push(kw2.CharacterString);
+                } catch (e) {
+                    //Catch Statement
+                }
+                try {
+                    kw.push(kw2.Anchor.text);
+                } catch (e) {
+                    //Catch Statement
+                }
+            }
+        } else {
+            kw.push('ERROR'); //, kw1);
+        }
+
+        return kw
+    },
+    //******************************************************************************************************
     addResults: function (results, jsonData, rankedTerms) { //rank, relevance ausrechnen
         //console.log(jsonData.records);
         let rankedRest = rankedTerms[1].concat(rankedTerms[2]).concat(rankedTerms[3]).concat(rankedTerms[4]);
@@ -502,15 +552,38 @@ var micka = {
                 try {
                     ds.title = a.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.title.CharacterString;
                 } catch (e) {
-                    //Catch Statement  SV_ServiceIdentification
+                    //Catch Statement
                 }
+                try {
+                    ds.title = a.MD_Metadata.identificationInfo.SV_ServiceIdentification.citation.CI_Citation.title.CharacterString;
+                } catch (e) {
+                    //Catch Statement
+                }
+
                 try {
                     ds.abstract = a.MD_Metadata.identificationInfo.MD_DataIdentification.abstract.CharacterString;
                 } catch (e) {
                     //Catch Statement
                 }
                 try {
-                    let bb = a.MD_Metadata.identificationInfo.MD_DataIdentification.extent.EX_Extent.geographicElement;
+                    ds.abstract = a.MD_Metadata.identificationInfo.SV_ServiceIdentification.abstract.CharacterString;
+                } catch (e) {
+                    //Catch Statement
+                }
+
+                try {
+                    let bb = {};
+                    try {
+                        bb = a.MD_Metadata.identificationInfo.MD_DataIdentification.extent.EX_Extent.geographicElement;
+                    } catch (e) {
+                        //Catch Statement
+                    }
+                    try {
+                        bb = a.MD_Metadata.identificationInfo.SV_ServiceIdentification.extent.EX_Extent.geographicElement;
+                    } catch (e) {
+                        //Catch Statement
+                    }
+
                     let bb2 = bb.EX_GeographicBoundingBox;
                     if (Array.isArray(bb)) {
                         bb2 = bb[0].EX_GeographicBoundingBox;
@@ -523,57 +596,18 @@ var micka = {
                     //Catch Statement
                 }
                 try {
-                    let kw1 = a.MD_Metadata.identificationInfo.MD_DataIdentification.descriptiveKeywords;
-                    if (Array.isArray(kw1)) {
-                        for (let kw2 of kw1) {
-                            if (Array.isArray(kw2.MD_Keywords.keyword)) {
-                                for (let kw3 of kw2.MD_Keywords.keyword) {
-                                    try {
-                                        ds.descKeywords.push(kw3.CharacterString);
-                                    } catch (e) {
-                                        //Catch Statement
-                                    }
-                                    try {
-                                        ds.descKeywords.push(kw3.Anchor.text);
-                                    } catch (e) {
-                                        //Catch Statement
-                                    }
-                                }
-                            } else {
-                                try {
-                                    ds.descKeywords.push(kw2.MD_Keywords.keyword.CharacterString);
-                                } catch (e) {
-                                    //Catch Statement
-                                }
-                                try {
-                                    ds.descKeywords.push(kw2.MD_Keywords.keyword.Anchor.text);
-                                } catch (e) {
-                                    //Catch Statement
-                                }
-                            }
-                        }
-                    } else if (Array.isArray(kw1.MD_Keywords.keyword)) {
-                        for (let kw2 of kw1.MD_Keywords.keyword) {
-                            try {
-                                ds.descKeywords.push(kw2.CharacterString);
-                            } catch (e) {
-                                //Catch Statement
-                            }
-                            try {
-                                ds.descKeywords.push(kw2.Anchor.text);
-                            } catch (e) {
-                                //Catch Statement
-                            }
-                        }
-                    } else {
-                        ds.descKeywords.push('ERROR'); //, kw1);
-                    }
-
+                    ds.descKeywords = micka.getKeywords(a.MD_Metadata.identificationInfo.MD_DataIdentification.descriptiveKeywords);
                 } catch (e) {
                     //Catch Statement
                 }
-                //console.log(ds.extent);
-                ds.descKeywords = ds.descKeywords.filter(k => k !== undefined).map(i => i.toLowerCase()).join('§').replace(/\//g,' ').split('§');
+                try {
+                    ds.descKeywords = micka.getKeywords(a.MD_Metadata.identificationInfo.SV_ServiceIdentification.descriptiveKeywords);
+                } catch (e) {
+                    //Catch Statement
+                }
+
+                //console.log(ds);
+                ds.descKeywords = ds.descKeywords.filter(k => k !== undefined).map(i => i.toLowerCase()).join('§').replace(/\//g, ' ').split('§');
                 let keywords = [];
                 for (let b of ds.descKeywords) { //add <span> for each keyword and rise rank (if match)
                     if (rankedTerms[0].includes(b.toLowerCase())) {
