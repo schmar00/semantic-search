@@ -167,7 +167,7 @@ var micka = {
             },
         });
 
-        micka.insertSearchCard('search_widget'); //inserts search widget only                
+        micka.insertSearchCard('search_widget'); //inserts search widget only
 
         if (urlParams.has('search')) {
             micka.search(decodeURI(urlParams.get('search')));
@@ -277,7 +277,7 @@ var micka = {
                     ?s <http://dbpedia.org/ontology/category> ?cat`;
         }
 
-        ws_micka.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
+        ws_gba.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
                         SELECT (GROUP_CONCAT(?s; separator = ';') as ?URIs) ?L (lang(?L)as ?lang)
                         WHERE {
                         {?s skos:prefLabel ?Le . FILTER(lang(?Le)="en")
@@ -299,14 +299,14 @@ var micka = {
         });
     },
 
-    //************************perform the search for a selected term ************************************         
+    //************************perform the search for a selected term ************************************
     semanticSearch: function (URIs, origLabel, searchInfo) {
         //console.log($('#selectAll').prop('checked'));
         document.getElementById('spinner').style.visibility = 'visible';
 
         $('#searchInput').val(origLabel);
         // ohne select (group_concat(distinct ?c; separator = '|') as ?category)
-        ws_micka.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
+        ws_gba.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
                         PREFIX dbp:<http://dbpedia.org/ontology/>
                         select distinct (min(?r) as ?rank) (lcase(str(?L)) as ?label)
                         where {
@@ -450,7 +450,10 @@ var micka = {
                             if (text.includes('<!DOCTYPE html>')) { //repair json+html mix
                                 text = text.split('<!DOCTYPE html>')[0] + ']}';
                             }
-                            results = micka.addResults(results, JSON.parse(text), rankedTerms);
+                            let jsonData = JSON.parse(text);
+                            if (jsonData.records.length > 0) {
+                                results = micka.addResults(results, jsonData, rankedTerms);
+                            }
                             //console.log('run',i, prefix + fetchQ[i] + suffix, text);
                         });
                 }
@@ -464,7 +467,7 @@ var micka = {
 
     //******************************************************************************************************
     addResults: function (results, jsonData, rankedTerms) { //rank, relevance ausrechnen
-        console.log(jsonData.records);
+        //console.log(jsonData.records);
         let rankedRest = rankedTerms[1].concat(rankedTerms[2]).concat(rankedTerms[3]).concat(rankedTerms[4]);
         let rR_single = rankedRest.filter(a => a.split(' ').length === 1);
         let r_single = rankedTerms[0].filter(a => a.split(' ').length === 1);
@@ -474,120 +477,182 @@ var micka = {
         let resIDs = results.map(a => a.id);
 
         for (let a of jsonData.records) {
-            if (!resIDs.includes(a.id)) {
-                let k = []; //individually assigned keywords
+            let ds = {
+                id: '',
+                type: '',
+                title: '?title',
+                abstract: '?abstract',
+                home: false,
+                rank: 1,
+                extent: [0, 0, 0, 0],
+                descKeywords: []
+            };
+
+            try {
+                ds.id = a.MD_Metadata.fileIdentifier.CharacterString;
+            } catch (e) {
+                //Catch Statement
+            }
+            if (!resIDs.includes(ds.id)) {
                 try {
-                    if (a.keywords !== undefined) {
-
-                            for (let s of a.keywords) {
-                                    k = k.concat(s.keywords);//.filter(item => item));
-                            }
-
-                        k = k.filter(x => x !== undefined).map(a => a.replace(/[(),\/>]/g, '$').split('$')).flat().map(b => b.trim().toLowerCase());
-                    }
+                    ds.type = a.MD_Metadata.hierarchyLevel.MD_ScopeCode.text;
                 } catch (e) {
                     //Catch Statement
                 }
-                //console.log(k);
-
-                let rank = 1;
-                let keywords = [];
-                for (let b of k) { //add <span> for each keyword and rise rank (if match)
-                    if (rankedTerms[0].includes(b.toLowerCase())) {
-                        keywords.push(`<span class="keywords1" onclick="micka.newSearch('${b}');">${b}</span>`);
-                        rank += 10;
-                    } else if (rankedTerms[1].includes(b.toLowerCase())) {
-                        keywords.push(`<span class="keywords2" onclick="micka.newSearch('${b}');">${b}</span>`);
-                        rank += 3;
-                    } else if (rankedTerms[2].concat(rankedTerms[3]).includes(b.toLowerCase())) {
-                        keywords.push(`<span class="keywords3" onclick="micka.newSearch('${b}');">${b}</span>`);
-                        rank += 3;
-                    } else if (rankedTerms[4].includes(b.toLowerCase())) {
-                        keywords.push(`<span class="keywords4" onclick="micka.newSearch('${b}');">${b}</span>`);
-                        rank += 1;
-                    } else {
-                        keywords.push(`<span class="keywords" onclick="micka.newSearch('${b}');">${b}</span>`);
-                    }
-                    //console.log(rank, keywords);
-                }
-
-                let tit = '?title';
-
                 try {
-                    tit = a.title;
+                    ds.title = a.MD_Metadata.identificationInfo.MD_DataIdentification.citation.CI_Citation.title.CharacterString;
                 } catch (e) {
                     //Catch Statement  SV_ServiceIdentification
                 }
-
-                let abstr = '?abstract';
-
                 try {
-                    abstr = a.abstract;
+                    ds.abstract = a.MD_Metadata.identificationInfo.MD_DataIdentification.abstract.CharacterString;
                 } catch (e) {
                     //Catch Statement
                 }
+                try {
+                    let bb = a.MD_Metadata.identificationInfo.MD_DataIdentification.extent.EX_Extent.geographicElement;
+                    let bb2 = bb.EX_GeographicBoundingBox;
+                    if (Array.isArray(bb)) {
+                        bb2 = bb[0].EX_GeographicBoundingBox;
+                    }
+                    //console.log(bb2);
+                    ds.extent = [parseFloat(bb2.westBoundLongitude.Decimal), parseFloat(bb2.southBoundLatitude.Decimal), parseFloat(bb2.eastBoundLongitude.Decimal), parseFloat(bb2.northBoundLatitude.Decimal)];
+                    //console.log(ds.extent);
+                    //bbox = left,bottom,right,top
+                } catch (e) {
+                    //Catch Statement
+                }
+                try {
+                    let kw1 = a.MD_Metadata.identificationInfo.MD_DataIdentification.descriptiveKeywords;
+                    if (Array.isArray(kw1)) {
+                        for (let kw2 of kw1) {
+                            if (Array.isArray(kw2.MD_Keywords.keyword)) {
+                                for (let kw3 of kw2.MD_Keywords.keyword) {
+                                    try {
+                                        ds.descKeywords.push(kw3.CharacterString);
+                                    } catch (e) {
+                                        //Catch Statement
+                                    }
+                                    try {
+                                        ds.descKeywords.push(kw3.Anchor.text);
+                                    } catch (e) {
+                                        //Catch Statement
+                                    }
+                                }
+                            } else {
+                                try {
+                                    ds.descKeywords.push(kw2.MD_Keywords.keyword.CharacterString);
+                                } catch (e) {
+                                    //Catch Statement
+                                }
+                                try {
+                                    ds.descKeywords.push(kw2.MD_Keywords.keyword.Anchor.text);
+                                } catch (e) {
+                                    //Catch Statement
+                                }
+                            }
+                        }
+                    } else if (Array.isArray(kw1.MD_Keywords.keyword)) {
+                        for (let kw2 of kw1.MD_Keywords.keyword) {
+                            try {
+                                ds.descKeywords.push(kw2.CharacterString);
+                            } catch (e) {
+                                //Catch Statement
+                            }
+                            try {
+                                ds.descKeywords.push(kw2.Anchor.text);
+                            } catch (e) {
+                                //Catch Statement
+                            }
+                        }
+                    } else {
+                        ds.descKeywords.push('ERROR'); //, kw1);
+                    }
 
+                } catch (e) {
+                    //Catch Statement
+                }
+                //console.log(ds.extent);
+                ds.descKeywords = ds.descKeywords.filter(k => k !== undefined).map(i => i.toLowerCase()).join('§').replace(/\//g,' ').split('§');
+                let keywords = [];
+                for (let b of ds.descKeywords) { //add <span> for each keyword and rise rank (if match)
+                    if (rankedTerms[0].includes(b.toLowerCase())) {
+                        keywords.push(`<span class="keywords1" onclick="micka.newSearch('${b}');">${b}</span>`);
+                        ds.rank += 10;
+                    } else if (rankedTerms[1].includes(b.toLowerCase())) {
+                        keywords.push(`<span class="keywords2" onclick="micka.newSearch('${b}');">${b}</span>`);
+                        ds.rank += 3;
+                    } else if (rankedTerms[2].concat(rankedTerms[3]).includes(b.toLowerCase())) {
+                        keywords.push(`<span class="keywords3" onclick="micka.newSearch('${b}');">${b}</span>`);
+                        ds.rank += 3;
+                    } else if (rankedTerms[4].includes(b.toLowerCase())) {
+                        keywords.push(`<span class="keywords4" onclick="micka.newSearch('${b}');">${b}</span>`);
+                        ds.rank += 1;
+                    } else {
+                        keywords.push(`<span class="keywords" onclick="micka.newSearch('${b}');">${b}</span>`);
+                    }
+                    //console.log(ds.rank, keywords);
+                }
 
-                let title_arr = tit.toLowerCase().split(/[\s,-.():\/]+/).filter(n => n);
-                let abstract_arr = abstr.toLowerCase().split(/[\s,-.():\/]+/).filter(n => n);
+                let title_arr = ds.title.toLowerCase().split(/[\s,-.():\/]+/).filter(n => n);
+                let abstract_arr = ds.abstract.toLowerCase().split(/[\s,-.():\/]+/).filter(n => n);
 
                 for (let x of title_arr) {
                     if (r_single.includes(x)) {
-                        rank += 10;
+                        ds.rank += 10;
                     }
                     if (rR_single.includes(x)) {
-                        rank += 4;
+                        ds.rank += 4;
                     }
                 }
 
                 for (let x of abstract_arr) {
                     if (r_single.includes(x)) {
-                        rank += 7;
+                        ds.rank += 7;
                     }
                     if (rR_single.includes(x)) {
-                        rank += 1;
+                        ds.rank += 1;
                     }
                 }
 
                 for (let x of r_combi) {
-                    if (tit.toLowerCase().includes(x)) {
-                        rank += 10;
+                    if (ds.title.toLowerCase().includes(x)) {
+                        ds.rank += 10;
                     }
-                    if (abstr.toLowerCase().includes(x)) {
-                        rank += 7;
+                    if (ds.abstract.toLowerCase().includes(x)) {
+                        ds.rank += 7;
                     }
                 }
                 for (let x of rR_combi) {
-                    if (tit.toLowerCase().includes(x)) {
-                        rank += 4;
+                    if (ds.title.toLowerCase().includes(x)) {
+                        ds.rank += 4;
                     }
-                    if (abstr.toLowerCase().includes(x)) {
-                        rank += 1;
+                    if (ds.abstract.toLowerCase().includes(x)) {
+                        ds.rank += 1;
                     }
                 }
 
-                let home = false;
-
-                if (a.bbox !== undefined) {
-                    //bbox = left,bottom,right,top
-                    if (a.bbox[0] < micka.BBOX[2] && a.bbox[2] > micka.BBOX[0] && a.bbox[3] > micka.BBOX[1] && a.bbox[1] < micka.BBOX[3]) {
-                        rank += 1;
-                        home = true;
-                        //console.log(a.bbox, central.BBOX, 'inside');
+                if (ds.extent !== undefined) {
+                    if (ds.extent[0] !== -180) {
+                        if (ds.extent[0] < micka.BBOX[2] && ds.extent[2] > micka.BBOX[0] && ds.extent[3] > micka.BBOX[1] && ds.extent[1] < micka.BBOX[3]) {
+                            ds.rank += 1;
+                            ds.home = true;
+                            //console.log(a.bbox, central.BBOX, 'inside');
+                        }
                     }
                 }
 
                 //bbox = left,bottom,right,top
 
                 results.push({
-                    id: a.id,
-                    type: a.type,
-                    home: home,
-                    title: tit,
-                    abstract: abstr.substring(0, 500) + ' ..',
+                    id: ds.id,
+                    type: ds.type,
+                    home: ds.home,
+                    title: ds.title,
+                    abstract: ds.abstract.substring(0, 500) + ' ..',
                     keywords: keywords,
-                    rank: rank,
-                    relevance: ((rank / 12 * 100).toFixed(0) > 100) ? 100 : (rank / 12 * 100).toFixed(0)
+                    rank: ds.rank,
+                    relevance: ((ds.rank / 12 * 100).toFixed(0) > 100) ? 100 : (ds.rank / 12 * 100).toFixed(0)
                 });
             }
         }
@@ -703,7 +768,7 @@ var micka = {
             let uri = window.fuse.list.find(a => a.L.value.toLowerCase() === term.toLowerCase()).URIs.value;
             micka.semanticSearch(uri, term, '');
         } catch (e) {
-            ws_micka.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
+            ws_gba.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
                             select ?s ?label
                             where {
                             values ?p {skos:altLabel skos:prefLabel skos:hiddenLabel}
@@ -797,7 +862,7 @@ https://egdi.geology.cz/csw/?request=GetRecords
 &elementsetname=full
 */
 
-//***********************************************************************************************************      
+//***********************************************************************************************************
 //********************************END************************************************************************
 
 /*
