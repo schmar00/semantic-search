@@ -389,7 +389,7 @@ var micka = {
     },
 
     createQ2: function (terms, queryType) { //micka query doesn`t accept brackets? -> replace
-        return terms.map(a => encodeURIComponent(queryType + '\'*' + a + '*\'').replace('\(', '').replace('\)', '')).join('+OR+');
+        return terms.filter(a => a.length > 4).map(a => encodeURIComponent(queryType + '\'*' + a + '*\'').replace('\(', '').replace('\)', '')).join('+OR+');
     },
 
     queryCSW: function (rankedTerms) {
