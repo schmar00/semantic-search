@@ -56,14 +56,11 @@
                 <div id="search_widget" class="card my-4 text-white bg-info mb-3">
                     <h5 class="card-header">
                         <strong>GeoERA dataset search (test)</strong>
-                        <select id="selectLang" class="custom-select text-white bg-info" style="max-width: 150px; float: right; font-size: 70%;"></select>
                     </h5>
                     <div id="searchCard" class="card-body" style="margin-top: -10px;">
                         <div class="text-white">
                             <span><select id="searchCategories" multiple="multiple" class=""></select></span>
-                            <span style="float: right; margin-top: 4px;">
-                                results&nbsp;&nbsp;&nbsp;<input id="maxResults" type="text" value="50" class="text-white bg-info" style="max-width: 40px; text-align: center; border-width: 0.5px;">
-                            </span>
+
                         </div>
                         <div id="searchGroup" class="input-group">
 
@@ -89,6 +86,69 @@
                 </div>
             </div>
             <div class="col-md-4">
+                <div class="card my-4 border-info mb-3" style="max-width: 20rem; line-height: 100%;">
+                    <div class="card-header">settings</div>
+                    <div class="card-body">
+                        <small>
+                            <div>select language&nbsp;&nbsp;
+                                <select id="selectLang" class="custom-select" style="max-width: 150px; font-size: 100%;"></select>
+                                &nbsp;<span id="transRate">10</span>%
+                            </div>
+                            <hr>
+                            <div style="margin-bottom: 10px;">
+                                Try to get&nbsp;
+                                <input id="maxResults" type="text" value="50" class="" style="max-width: 40px; text-align: center;"> results
+                            </div>
+                            <hr>
+                            <div style="float: left;">
+                                Sparql endpoint<br><br>
+                                <form class="form-group" id="selEndpoint">
+                                    <div class="form-check">
+                                        <label class="form-check-label">
+                                            <input type="radio" class="form-check-input" name="optionsRadios" id="optionsRadios1" value="gba" checked="">
+                                            GBA v2.1
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <label class="form-check-label">
+                                            <input type="radio" class="form-check-input" name="optionsRadios" id="optionsRadios2" value="brgm">
+                                            BRGM v2
+                                        </label>
+                                    </div>
+                                </form>
+                            </div>
+                            <div style="float: left; margin-left: 50px;">
+                                <fieldset class="form-group" id="restrictKeyword">
+                                    restrict keywords to ..<br><br>
+                                    <div class="form-check">
+                                        <label class="form-check-label">
+                                            <input class="form-check-input" type="checkbox" value="" id="inspire">
+                                            INSPIRE codeslists
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <label class="form-check-label">
+                                            <input class="form-check-input" type="checkbox" value="" id="gemet">
+                                            GEMET terms
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <label class="form-check-label">
+                                            <input class="form-check-input" type="checkbox" value="" id="cgi">
+                                            CGI codeslists
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <label class="form-check-label">
+                                            <input class="form-check-input" type="checkbox" value="" id="gba">
+                                            GBA concepts
+                                        </label>
+                                    </div>
+                                </fieldset>
+                            </div>
+                        </small>
+                    </div>
+                </div>
 
                 <div class="card my-4 border-info mb-3" style="max-width: 20rem; line-height: 100%;">
                     <div class="card-header">instruction</div>

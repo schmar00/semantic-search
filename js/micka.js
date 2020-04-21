@@ -152,6 +152,8 @@ var micka = {
                 urlParams.append('lang', this.value);
                 window.location.search += urlParams;
             }
+
+            //micka.getLangCount(this.value);
         });
 
         cat.forEach(function (c, index) {
@@ -165,6 +167,16 @@ var micka = {
                 selectedCategories = $('#searchCategories option:selected').map((a, item) => item.label).toArray().join('\'@en \'');
                 micka.initSearch(selectedCategories);
             },
+        });
+
+        $('#selEndpoint').on('change', function (e) {
+            //console.log($("input:checked", this).val());
+            micka.initSearch(selectedCategories);
+        });
+
+        $('#restrictKeyword').on('change', '.form-check input', function (e) {
+            //console.log($("input:checked", this).val());
+            micka.initSearch(selectedCategories);
         });
 
         micka.insertSearchCard('search_widget'); //inserts search widget only
@@ -274,13 +286,34 @@ var micka = {
         let qCat = '';
         if (selectedCategories !== '') {
             qCat = `VALUES ?cat {'${selectedCategories}'@en}
-                    ?s <http://dbpedia.org/ontology/category> ?cat`;
+                    ?s <http://dbpedia.org/ontology/category> ?cat .`;
+        }
+        let rk = [];
+
+        if ($('#inspire').is(':checked')) {
+            rk.push('inspire.ec.europa.eu');
+        }
+        if ($('#gemet').is(':checked')) {
+            rk.push('eionet.europa');
+        }
+        if ($('#cgi').is(':checked')) {
+            rk.push('resource.geosciml.org');
+        }
+        if ($('#gba').is(':checked')) {
+            rk.push('resource.geolba.ac.at');
         }
 
-        ws_gba.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
+        let rk_string = '';
+        if (rk.length > 0) {
+            rk_string = `?s ?p ?o .
+                        FILTER regex(str(?o), "${rk.join('") FILTER regex(str(?o), "')}")`;
+            //console.log(rk_string);
+        }
+
+        ws.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
                         SELECT (GROUP_CONCAT(?s; separator = ';') as ?URIs) ?L (lang(?L)as ?lang)
                         WHERE {
-                        {?s skos:prefLabel ?Le . FILTER(lang(?Le)="en")
+                        {?s skos:prefLabel ?Le . FILTER(lang(?Le)="en") . ${rk_string}
                         OPTIONAL {?s skos:prefLabel ?Lx FILTER(lang(?Lx)="${micka.USER_LANG}")}
                         BIND(COALESCE(?Lx,?Le) AS ?L)
                         } UNION {
@@ -296,6 +329,8 @@ var micka = {
             window.fuse = new Fuse(jsonData.results.bindings, options);
             //console.log(window.fuse);
             document.getElementById('searchInput').disabled = false;
+            $('#transRate').text(Math.ceil(jsonData.results.bindings.filter(i => i.lang.value == micka.USER_LANG).length / jsonData.results.bindings.length * 100));
+
         });
     },
 
@@ -306,25 +341,27 @@ var micka = {
 
         $('#searchInput').val(origLabel);
         // ohne select (group_concat(distinct ?c; separator = '|') as ?category)
-        ws_gba.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
-                        PREFIX dbp:<http://dbpedia.org/ontology/>
-                        select distinct (min(?r) as ?rank) (lcase(str(?L)) as ?label)
-                        where {
-                        values ?s {<${URIs.replace(/;/g, "> <")}>}
-                        values ?l {skos:altLabel skos:prefLabel skos:hiddenLabel}
-                        {?s ?l ?L filter(lang(?L)='en') bind(0 as ?r)}
-                        union
-                        {?s skos:related ?o . ?o ?l ?L filter(lang(?L)='en') bind(1 as ?r)}
-                        union
-                        {?s skos:narrower ?o . ?o ?l ?L filter(lang(?L)='en') bind(2 as ?r)}
-                        union
-                        {?s skos:narrower+ ?o . ?o ?l ?L filter(lang(?L)='en') bind(3 as ?r)}
-                        union
-                        {?s skos:broader ?o . ?o ?l ?L filter(lang(?L)='en') bind(4 as ?r)}
-                        }
-                        group by ?L
-                        order by ?rank
-                        LIMIT 20`, data => {
+        //console.log(`${URIs.replace(/;/g, "> <")}`);
+
+        ws.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
+                PREFIX dbp:<http://dbpedia.org/ontology/>
+                select distinct (min(?r) as ?rank) (lcase(str(?L)) as ?label)
+                where {
+                values ?s {<${URIs.replace(/;/g, "> <")}>}
+                values ?l {skos:altLabel skos:prefLabel skos:hiddenLabel}
+                {?s ?l ?L filter(lang(?L)='en') bind(0 as ?r)}
+                union
+                {?s skos:related ?o . ?o ?l ?L filter(lang(?L)='en') bind(1 as ?r)}
+                union
+                {?s skos:narrower ?o . ?o ?l ?L filter(lang(?L)='en') bind(2 as ?r)}
+                union
+                {?s skos:narrower+ ?o . ?o ?l ?L filter(lang(?L)='en') bind(3 as ?r)}
+                union
+                {?s skos:broader ?o . ?o ?l ?L filter(lang(?L)='en') bind(4 as ?r)}
+                }
+                group by ?L
+                order by ?rank
+                LIMIT 20`, data => {
 
             /*                      FILTER(!regex(str(?L), '/'))
                                     FILTER(!regex(str(?L), ','))
@@ -361,7 +398,7 @@ var micka = {
         let results = [];
         let rankedTerms = [[searchTerm], [], [], [], []];
         micka.clearPage(); //(subject='Geology'+AND+Subject='Hydrogeology') FullText%3D%27GBA%27
-        //console.log(searchTerm, combinationTerm);
+        console.log(searchTerm, combinationTerm);
 
         if (!combinationTerm) {
             rankedTerms[0] = searchTerm.toLowerCase().split(' ');
@@ -376,7 +413,7 @@ var micka = {
                 }
                 results = micka.addResults(results, JSON.parse(text), rankedTerms);
                 micka.printResults(results.sort((a, b) => b.rank - a.rank), [rankedTerms[0], [], [], [], []], 'full text (exact matches)');
-                //console.log(`${prefix}FullText%3D'${searchTerm}'${suffix}`, text);
+                console.log(`${prefix}FullText%3D'${searchTerm}'${suffix}`, text);
 
             });
 
@@ -397,6 +434,7 @@ var micka = {
         let aQ = rankedTerms[0];
         let bQ = rankedTerms[1].concat(rankedTerms[2]);
         let cQ = rankedTerms[3].concat(rankedTerms[4]);
+        //console.log(aQ, bQ, cQ);
 
         //Title like '*gba*' OR Abstract like '*gba*'
         //Title%20like%20%27*gba*%27%20OR%20Abstract%20like%20%27*gba*%27
@@ -443,7 +481,12 @@ var micka = {
                 }
 
                 if (fetchQ[i].length > 5) {
-                    await fetch(prefix + fetchQ[i] + suffix)
+                    //console.log(fetchQ[i]);
+                    let q = fetchQ[i];
+                    if (q.substr(q.length - 4) == ' OR ') {
+                        q = q.slice(0, -4);
+                    }
+                    await fetch(prefix + q + suffix)
                         .then(res => res.text())
                         .then(text => {
                             $('#qCount').text(i + 1);
@@ -704,18 +747,18 @@ var micka = {
             $('#1').append('more than ');
         }
         $('#1').append(`<strong>${results.length}</strong> results for: <br>`);
-        $('#1').append(`<span class="keywords1">${rankedTerms[0].join('</span>, <span class="keywords1">')}</span><br>`);
+        $('#1').append(`<span class="keywords1">${rankedTerms[0].join('</span>&nbsp;<span class="keywords1">')}</span>&nbsp;`);
 
         if (rankedTerms[1].length > 0) {
-            rankedTerms[1].forEach(a => $('#1').append(`<span class="keywords2" onclick="micka.newSearch('${a}');">${a}</span> `));
+            rankedTerms[1].forEach(a => $('#1').append(`<span class="keywords2" onclick="micka.newSearch('${a}');">${a}</span>&nbsp;`));
         }
         if (rankedTerms[2].concat(rankedTerms[3]).length > 0) {
-            $('#1').append(`<br>- narrower terms: <br>`);
-            rankedTerms[2].concat(rankedTerms[3]).forEach(a => $('#1').append(`<span class="keywords3" onclick="micka.newSearch('${a}');">${a}</span> `));
+            //$('#1').append(`<br>- narrower terms: <br>`);
+            rankedTerms[2].concat(rankedTerms[3]).forEach(a => $('#1').append(`<span class="keywords3" onclick="micka.newSearch('${a}');">${a}</span>&nbsp;`));
         }
         if (rankedTerms[4].length > 0) {
-            $('#1').append(`<br>- and broader terms: <br>`);
-            rankedTerms[4].forEach(a => $('#1').append(`<span class="keywords4" onclick="micka.newSearch('${a}');">${a}</span> `));
+            //$('#1').append(`<br>- and broader terms: <br>`);
+            rankedTerms[4].forEach(a => $('#1').append(`<span class="keywords4" onclick="micka.newSearch('${a}');">${a}</span>&nbsp;`));
         }
         $('#1').append(`<hr>`);
 
@@ -749,7 +792,7 @@ var micka = {
             }
 
 
-            document.getElementById('1').innerHTML += `
+            document.getElementById('2').innerHTML += `
                         <div>
                             <span class="MD_type">${tS}&nbsp;</span>
                             <a href="${mickaViewer + record.id}">
@@ -802,7 +845,7 @@ var micka = {
             let uri = window.fuse.list.find(a => a.L.value.toLowerCase() === term.toLowerCase()).URIs.value;
             micka.semanticSearch(uri, term, '');
         } catch (e) {
-            ws_gba.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
+            ws.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
                             select ?s ?label
                             where {
                             values ?p {skos:altLabel skos:prefLabel skos:hiddenLabel}

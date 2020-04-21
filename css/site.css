@@ -69,3 +69,11 @@ a {
 .MD_type {
     color: gray;
 }
+
+.form-check-label input {
+    margin-top:1px;
+}
+
+.form-check {
+    margin-bottom: 3px;
+}
