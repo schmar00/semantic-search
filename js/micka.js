@@ -313,7 +313,8 @@ var micka = {
         ws.json2(`PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
                         SELECT (GROUP_CONCAT(?s; separator = ';') as ?URIs) ?L (lang(?L)as ?lang)
                         WHERE {
-                        {?s skos:prefLabel ?Le . FILTER(lang(?Le)="en") . ${rk_string}
+                        {?s skos:prefLabel ?Le . FILTER(lang(?Le)="en") . FILTER(!regex(str(?Le), "(category)")) .
+                        ${rk_string}
                         OPTIONAL {?s skos:prefLabel ?Lx FILTER(lang(?Lx)="${micka.USER_LANG}")}
                         BIND(COALESCE(?Lx,?Le) AS ?L)
                         } UNION {
@@ -398,7 +399,7 @@ var micka = {
         let results = [];
         let rankedTerms = [[searchTerm], [], [], [], []];
         micka.clearPage(); //(subject='Geology'+AND+Subject='Hydrogeology') FullText%3D%27GBA%27
-        console.log(searchTerm, combinationTerm);
+        //console.log(searchTerm, combinationTerm);
 
         if (!combinationTerm) {
             rankedTerms[0] = searchTerm.toLowerCase().split(' ');
@@ -413,7 +414,7 @@ var micka = {
                 }
                 results = micka.addResults(results, JSON.parse(text), rankedTerms);
                 micka.printResults(results.sort((a, b) => b.rank - a.rank), [rankedTerms[0], [], [], [], []], 'full text (exact matches)');
-                console.log(`${prefix}FullText%3D'${searchTerm}'${suffix}`, text);
+                //console.log(`${prefix}FullText%3D'${searchTerm}'${suffix}`, text);
 
             });
 
